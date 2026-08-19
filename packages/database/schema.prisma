@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Record {
+  id                String    @id @default(cuid())
+  recordId          String    @unique @map("record_id") // SYN-ET-XXXX
+  item              String
+  itemAm            String    @map("item_am")
+  category          String
+  categoryAm        String    @map("category_am")
+  buyer             String
+  supplier          String
+  value             Int
+  date              String
+  status            String
+  statusAm          String    @map("status_am")
+  daysOpen          Int       @map("days_open")
+  bids              Int
+  signals           String[] // ["price", "repeat", "delay"]
+  reviewStatus      ReviewStatus? @default(pending) @map("review_status")
+  reviewNote        String?   @map("review_note")
+  reviewDate        String?   @map("review_date")
+  reviewedBy        String?   @map("reviewed_by")
+  comparables       ComparableListing[]
+  geminiGuidance    GeminiGuidance?
+  auditLogs         AuditLog[]
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([reviewStatus])
+  @@index([category])
+  @@index([status])
+  @@index([value])
+  @@map("records")
+}
+
+model ComparableListing {
+  id                  String    @id @default(cuid())
+  recordId            String    @map("record_id")
+  record              Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  item                String
+  itemAm              String?   @map("item_am")
+  condition           String
+  conditionAm         String?   @map("condition_am")
+  price               Int
+  sourceUrl           String    @map("source_url")
+  observationDate     String    @map("observation_date")
+  note                String
+  noteAm              String?   @map("note_am")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([recordId])
+  @@map("comparable_listings")
+}
+
+model GeminiGuidance {
+  id         String   @id @default(cuid())
+  recordId   String   @unique @map("record_id")
+  record     Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  language   String
+  overviewEn String   @map("overview_en")
+  overviewAm String   @map("overview_am")
+  questionsEn String[] @map("questions_en")
+  questionsAm String[] @map("questions_am")
+  limitationsEn String @map("limitations_en")
+  limitationsAm String @map("limitations_am")
+  source     String   // "gemini" or "fallback"
+  promptVersion String? @map("prompt_version")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("gemini_guidances")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  recordId    String?  @map("record_id")
+  action      String   // "create", "update", "review", "delete"
+  entityType  String   @map("entity_type") // "record", "review", "comparable"
+  entityId    String   @map("entity_id")
+  changes     Json?    // Diff of changes
+  performedBy String?  @map("performed_by") // User ID or "system"
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([recordId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         UserRole  @default(reviewer)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum ReviewStatus {
+  pending
+  needsDocs      @map("needs_docs")
+  underReview    @map("under_review")
+  noConcern      @map("no_concern")
+  referred
+}
+
+enum UserRole {
+  public
+  reviewer
+  governor
+  admin
+}
