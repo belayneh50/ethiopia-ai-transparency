@@ -1,5 +1,7 @@
 import { Dual } from "./Dual";
 import { REVIEW_STATUSES } from "../reviewFilter";
+import { useSettings } from "../SettingsContext";
+import { getDelayThresholdCopy } from "../delayThreshold";
 import type { Language, RecordItem } from "../types";
 
 type ProcurementTimelineProps = {
@@ -20,9 +22,11 @@ type MilestoneStep = {
 };
 
 export function ProcurementTimeline({ record, language }: ProcurementTimelineProps) {
+  const { settings } = useSettings();
   const isDelayFlagged = record.signals.includes("delay");
   const isPaid = record.status === "Paid";
   const isAwaitingPayment = record.status === "Awaiting payment";
+  const delayThresholdCopy = getDelayThresholdCopy(record.daysOpen, settings.delay);
 
   // Build sequential procurement lifecycle steps
   const steps: MilestoneStep[] = [
@@ -155,8 +159,8 @@ export function ProcurementTimeline({ record, language }: ProcurementTimelinePro
             </strong>
             <p>
               <Dual
-                en={`This procurement has been active for ${record.daysOpen} days without final resolution, exceeding the 45-day review threshold.`}
-                am={`ይህ ግዥ የመጨረሻ ውሳኔ ሳያገኝ ${record.daysOpen} ቀናት የቆየ ሲሆን፣ ይህም ከ45 ቀናት የማሳያ ገደብ በላይ ነው።`}
+                en={delayThresholdCopy.en}
+                am={delayThresholdCopy.am}
               />
             </p>
           </div>

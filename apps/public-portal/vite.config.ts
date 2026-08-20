@@ -1,11 +1,11 @@
 import { defineConfig, loadEnv, type Plugin, type PreviewServer, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
 import { adaptGeminiPayload, describeGeneratedGuidance, describeGeminiShape, extractGeneratedTexts } from "./src/geminiResponseAdapter.ts";
+import { GEMINI_MODEL_NAME, GEMINI_REQUEST_TIMEOUT_MS } from "./src/geminiModel.ts";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const MODEL_NAME = "gemini-1.5-flash";
 type Server = ViteDevServer | PreviewServer;
 type GeminiFailureClass = "credential" | "quota" | "model_or_endpoint" | "request_format" | "network" | "upstream" | "response_contract" | "proxy_validation" | "proxy_internal";
 
@@ -66,9 +66,10 @@ The marketReference unit-price numbers were deterministically computed in the re
 Synthetic record JSON:
 ${JSON.stringify(geminiInput)}`;
         let upstream: Response;
-        try { upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`, {
+        try { upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_NAME}:generateContent`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: {

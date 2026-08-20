@@ -90,8 +90,27 @@ The production assets will be built in `dist/`.
 
 1. Copy `.env.example` to `.env.local`.
 2. Set `GEMINI_API_KEY` in `.env.local`.
-3. The key is read only by the local Vite server proxy in `vite.config.ts` and is never exposed to browser bundles.
+3. The key is read only by the local Vite server proxy in `apps/public-portal/vite.config.ts` and is never exposed to browser bundles.
 4. If Gemini is not configured or offline, the interface automatically falls back to safe local review questions.
+
+### Gemini troubleshooting note
+
+The local proxy previously targeted `gemini-1.5-flash`, which is no longer available on the current Gemini API and therefore returned `404 Not Found`. The repair is intentionally centralized:
+
+- `apps/public-portal/src/geminiModel.ts` selects `gemini-3.6-flash` and sets a 60-second request timeout. Keep future model changes in this file instead of hard-coding model names in the proxy.
+- `apps/public-portal/vite.config.ts` reads the model constants and applies the timeout to the server-side Gemini request. Do not move `GEMINI_API_KEY` into client code or a `VITE_`-prefixed variable.
+- `apps/public-portal/src/geminiResponseAdapter.ts` accepts harmless negated text such as “does not provide a risk score,” while still rejecting an actual risk score or rating. This prevents a valid safe disclaimer from being mistaken for prohibited output.
+- Never print or commit the API-key value. Diagnose configuration by reporting only whether the key is present and by logging sanitized upstream status/error information.
+
+After changing the Gemini integration, verify it from the repository root:
+
+```bash
+corepack pnpm test
+corepack pnpm build
+corepack pnpm dev
+```
+
+Then submit one synthetic record through **AI Guidance**. A successful request returns an overview, bilingual review questions, and a limitations statement. If it fails, check the local proxy response first: `404` usually indicates an unavailable model name, while a timeout indicates network latency or an upstream request that needs more time.
 
 ---
 

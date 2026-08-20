@@ -45,8 +45,15 @@ export function adaptNeutralGuidance(text: string, language: GuidanceLanguage): 
   const result: NeutralGuidance = { overviewEn: stringValue("overviewEn"), overviewAm: stringValue("overviewAm"), questionsEn: stringArray("questionsEn"), questionsAm: stringArray("questionsAm"), limitationsEn: stringValue("limitationsEn"), limitationsAm: stringValue("limitationsAm") };
   const strings = [result.overviewEn, result.overviewAm, result.limitationsEn, result.limitationsAm];
   const shapeValid = language === "am" ? !result.overviewEn && !result.limitationsEn && !result.questionsEn.length && !!result.overviewAm && result.questionsAm.length >= 2 && result.questionsAm.length <= 4 && !!result.limitationsAm : language === "en" ? !result.overviewAm && !result.limitationsAm && !result.questionsAm.length && !!result.overviewEn && result.questionsEn.length >= 2 && result.questionsEn.length <= 4 && !!result.limitationsEn : !!result.overviewEn && !!result.overviewAm && result.questionsEn.length >= 2 && result.questionsEn.length <= 4 && result.questionsAm.length === result.questionsEn.length && !!result.limitationsEn && !!result.limitationsAm;
-  const prohibited = /risk score|risk rating|(?:is|was|appears|seems) corrupt|(?:committed|indicates|shows) wrongdoing|(?:is|was) guilty|(?:is|was) biased|fairness determination|(?:we|i) recommend|recommend(?:s|ed)? (?:that|to)|should (?:reject|approve|investigate|award)|የአደጋ ነጥብ|ሙስና ነው|ጥፋተኛ ነው|አድልዎ አለ|እንዲያጸድቅ|እንዲያስቀር|እንዲመረምር|ማጽደቅ አለበት|ውድቅ ማድረግ አለበት/i;
-  if (!shapeValid || strings.some(value => value.length > 1200) || [...result.questionsEn, ...result.questionsAm].some(value => value.length > 500) || prohibited.test(JSON.stringify(result))) throw new Error("response_contract");
+  const serialized = JSON.stringify(result);
+  const hasUnsafeRiskScore = serialized
+    .split(/[.!?\n]+/)
+    .some((sentence) =>
+      /risk score|risk rating/i.test(sentence) &&
+      !/\b(?:no|not|without|doesn't|does not|will not|won't)\b/i.test(sentence)
+    );
+  const prohibited = /(?:is|was|appears|seems) corrupt|(?:committed|indicates|shows) wrongdoing|(?:is|was) guilty|(?:is|was) biased|fairness determination|(?:we|i) recommend|recommend(?:s|ed)? (?:that|to)|should (?:reject|approve|investigate|award)|የአደጋ ነጥብ|ሙስና ነው|ጥፋተኛ ነው|አድልዎ አለ|እንዲያጸድቅ|እንዲያስቀር|እንዲመረምር|ማጽደቅ አለበት|ውድቅ ማድረግ አለበት/i;
+  if (!shapeValid || strings.some(value => value.length > 1200) || [...result.questionsEn, ...result.questionsAm].some(value => value.length > 500) || hasUnsafeRiskScore || prohibited.test(serialized)) throw new Error("response_contract");
   return result;
 }
 
