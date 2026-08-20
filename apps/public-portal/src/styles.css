@@ -70,6 +70,33 @@ footer { min-height:160px; background:#13372f; color:#d6dfdc; display:flex; alig
 .modal-tabs button.active { color: var(--green); border-bottom-color: var(--green); background: #fff; }
 .modal-tab-content { min-height: 400px; }
 .modal-tabs button .am-sub { font-weight: 400; opacity: .7; }
+.procurement-timeline-section { margin: 4px 0 26px; padding: 20px; border: 1px solid var(--line); background: #fbfaf6; }
+.timeline-header { margin-bottom: 18px; }
+.timeline-header .eyebrow { margin: 0 0 7px; color: #7a6258; font-size: 9px; line-height: 1.45; letter-spacing: .14em; }
+.timeline-header h3 { margin: 0; color: var(--green); font-size: 18px; line-height: 1.35; letter-spacing: -.015em; }
+.timeline-header h3 .am-only { font-family: "Noto Sans Ethiopic", sans-serif; font-size: .88em; font-weight: 600; color: #536660; }
+.timeline-stepper { display: flex; flex-direction: column; }
+.timeline-step { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 12px; min-height: 62px; }
+.step-track-wrapper { display: flex; flex-direction: column; align-items: center; min-height: 100%; }
+.step-node { width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; border: 1px solid #b9c3bd; border-radius: 50%; background: #fff; color: #60716b; font-size: 11px; font-weight: 800; }
+.step-completed .step-node { border-color: #4c806c; background: #e4efe9; color: #236049; }
+.step-warning .step-node { border-color: #b5684f; background: #f7e9e2; color: #94452e; }
+.step-current .step-node { border-color: var(--green); background: var(--green); color: #fff; }
+.step-connector { width: 1px; flex: 1; min-height: 30px; background: #cfd5d1; }
+.connector-done { background: #86aa9b; }
+.step-content { min-width: 0; padding: 2px 0 16px; }
+.step-title-wrap { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.step-title { min-width: 0; color: #1b3c33; font-size: 13px; line-height: 1.4; }
+.step-title .am-only { font-family: "Noto Sans Ethiopic", sans-serif; font-size: 12px; font-weight: 600; color: #556862; }
+.step-title .dual-separator { color: #9aa49f; font-weight: 400; }
+.step-badge { flex: none; padding: 3px 7px; border: 1px solid #d2d9d5; border-radius: 999px; background: #fff; color: #52645e; font-size: 9px; line-height: 1.35; font-weight: 700; }
+.badge-warning { border-color: #ddb9aa; background: #f9eee9; color: #8b422e; }
+.step-detail { margin: 5px 0 0; color: #66756f; font-size: 11px; line-height: 1.5; }
+.step-detail .am-only { font-family: "Noto Sans Ethiopic", sans-serif; }
+.timeline-alert { display: flex; gap: 11px; margin-top: 4px; padding: 13px 14px; border-left: 3px solid #b45d42; background: #f8ece6; color: #713d2f; }
+.timeline-alert .alert-icon { flex: none; font-size: 16px; }
+.timeline-alert strong { display: block; font-size: 11px; line-height: 1.5; }
+.timeline-alert p { margin: 4px 0 0; font-size: 10px; line-height: 1.55; }
 
 .market-card-label{display:block;font-size:10px;line-height:1.35;color:#5c6b65;font-weight:600;margin-bottom:6px}
 .market-card-value{display:block;font-size:13px;font-weight:700;color:var(--green)}
@@ -228,3 +255,4 @@ footer { min-height:160px; background:#13372f; color:#d6dfdc; display:flex; alig
 
 @media(max-width:900px){.hero{grid-template-columns:1fr;gap:50px}.summary{margin:0;grid-template-columns:1fr 1fr}.records{margin:65px 20px}.method{grid-template-columns:1fr}.signal-cards{grid-template-columns:1fr 1fr}.topbar nav{display:none}.search{flex-basis:100%}.filterbar select{flex:1}.data-note{max-width:520px}.summary>div:nth-child(2){border-right:0}.review-summary-bar .rsb-note{margin-left:0;width:100%}.memo-signoff-block{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.topbar{padding:0 18px}.brand{min-width:0;margin-right:auto}.topbar .brand small{display:none}.topbar-actions{gap:6px}.topbar-session-btn{padding:5px 8px;font-size:10px}.language button{padding:7px}.hero{padding:55px 22px}.summary{grid-template-columns:1fr 1fr}.summary>div{padding:20px 16px;min-height:95px}.summary b{font-size:25px}.section-title{align-items:flex-start;gap:10px;flex-direction:column}.section-title-actions{width:100%;justify-content:flex-start}.section-title h2 span{display:block;margin:5px 0}.filterbar{gap:8px}.filterbar select,.review-filter-select{min-width:100%!important;width:100%}.search{flex-basis:100%;min-width:100%}.add-record-btn{width:100%;flex-basis:100%}.signal-cards{grid-template-columns:1fr}.method{padding-top:65px;padding-bottom:65px}.method h2{font-size:38px}footer{align-items:flex-start;flex-direction:column;gap:20px}footer p{margin:0}.detail-grid{grid-template-columns:1fr}.modal{padding-top:60px}.form-row,.form-row-bilingual,.bilingual-headers{grid-template-columns:1fr}.add-modal{width:100%}.market-summary{grid-template-columns:1fr 1fr}.memo-signoff-block{grid-template-columns:1fr}}
+@media(max-width:600px){.procurement-timeline-section{padding:16px}.timeline-header h3{font-size:16px}.timeline-step{grid-template-columns:26px minmax(0,1fr);gap:10px}.step-title-wrap{display:block}.step-badge{display:inline-block;margin-top:5px}}
