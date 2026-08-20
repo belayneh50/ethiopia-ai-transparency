@@ -218,7 +218,7 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
                   id="sample-unit"
                   value={formData.unit}
                   onChange={(event) => updateField("unit", event.target.value)}
-                  placeholder={localText("e.g., pieces, boxes", "ለምሳሌ፣ ቁራጭ፣ ሳጥን")}
+                  placeholder={localText("e.g., pieces, dozens, boxes", "ለምሳሌ፣ ነጠላ፣ ደርዘን፣ ሳጥን")}
                 />
                 {errors.unit && <span className="error">{errors.unit}</span>}
               </div>
