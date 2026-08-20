@@ -21,6 +21,8 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
     buyer: "",
     supplier: "",
     value: "",
+    quantity: "",
+    unit: "",
     bids: "",
     approvalDate: "",
     paymentDate: "",
@@ -67,6 +69,11 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
     if (!Number.isFinite(value) || value <= 0)
       nextErrors.value = localText("Enter a positive amount", "ትክክለኛ የብር መጠን ያስገቡ");
 
+    const quantity = Number(formData.quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0)
+      nextErrors.quantity = localText("Enter a positive whole number", "ትክክለኛ ሙሉ ቁጥር ያስገቡ");
+    if (!formData.unit.trim()) nextErrors.unit = required;
+
     const bids = Number(formData.bids);
     if (!Number.isInteger(bids) || bids <= 0)
       nextErrors.bids = localText("Enter a positive whole number", "ትክክለኛ ሙሉ ቁጥር ያስገቡ");
@@ -94,6 +101,8 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
         buyer: formData.buyer.trim(),
         supplier: formData.supplier.trim(),
         value,
+        quantity,
+        unit: formData.unit.trim(),
         bids,
         approvalDate: formData.approvalDate,
         paymentDate: formData.paymentDate,
@@ -164,7 +173,7 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
                     id="sample-item-en"
                     value={formData.item}
                     onChange={(event) => updateField("item", event.target.value)}
-                    placeholder="e.g., Office chairs (50)"
+                    placeholder="e.g., Office chairs"
                   />
                   {errors.item && <span className="error">{errors.item}</span>}
                 </div>
@@ -178,11 +187,41 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
                     id="sample-item-am"
                     value={formData.itemAm}
                     onChange={(event) => updateField("itemAm", event.target.value)}
-                    placeholder="ለምሳሌ፣ የቢሮ ወንበሮች (50)"
+                    placeholder="ለምሳሌ፣ የቢሮ ወንበሮች"
                   />
                   {errors.itemAm && <span className="error">{errors.itemAm}</span>}
                 </div>
               )}
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="sample-quantity">
+                  <Dual en="Quantity" am="የዕቃ ብዛት" /> *
+                </label>
+                <input
+                  id="sample-quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={formData.quantity}
+                  onChange={(event) => updateField("quantity", event.target.value)}
+                  placeholder="50"
+                />
+                {errors.quantity && <span className="error">{errors.quantity}</span>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="sample-unit">
+                  <Dual en="Unit" am="መለኪያ" /> *
+                </label>
+                <input
+                  id="sample-unit"
+                  value={formData.unit}
+                  onChange={(event) => updateField("unit", event.target.value)}
+                  placeholder={localText("e.g., pieces, boxes", "ለምሳሌ፣ ቁራጭ፣ ሳጥን")}
+                />
+                {errors.unit && <span className="error">{errors.unit}</span>}
+              </div>
             </div>
 
             <div className="form-field">

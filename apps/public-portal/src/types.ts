@@ -14,6 +14,8 @@ export type RecordItem = {
   buyer: string;
   supplier: string;
   value: number;
+  quantity?: number;
+  unit?: string;
   date: string;
   status: string;
   statusAm: string;
@@ -43,6 +45,8 @@ export type AddRecordData = {
   buyer: string;
   supplier: string;
   value: number;
+  quantity: number;
+  unit: string;
   bids: number;
   approvalDate: string;
   paymentDate: string;
