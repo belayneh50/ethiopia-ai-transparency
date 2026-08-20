@@ -76,6 +76,10 @@ corepack pnpm dev
 
 Keep the terminal open while the development server is running, then open [http://localhost:5173](http://localhost:5173) in your browser. If Vite selects a different available port, use the local address printed in the terminal. Press `Ctrl+C` to stop the server.
 
+#### One-click Windows launcher
+
+After installing dependencies once, double-click `start-local.cmd` in the repository folder. Keep its Command Prompt window open, then use the local address displayed there. The launcher automatically starts from the correct project folder.
+
 ### Run Unit Tests
 
 ```bash
