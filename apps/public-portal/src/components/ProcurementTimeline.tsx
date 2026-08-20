@@ -130,11 +130,7 @@ export function ProcurementTimeline({ record, language }: ProcurementTimelinePro
             <div className="step-content">
               <div className="step-title-wrap">
                 <strong className="step-title">
-                  <span className="en-only">{step.titleEn}</span>
-                  <span className="am-only">{step.titleAm}</span>
-                  <span className="lang-both">
-                    {step.titleEn} <small className="am-sub">· {step.titleAm}</small>
-                  </span>
+                  <Dual en={step.titleEn} am={step.titleAm} separator=" · " />
                 </strong>
                 {step.badgeEn && (
                   <span className={`step-badge badge-${step.status}`}>
