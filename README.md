@@ -62,11 +62,15 @@ A lightweight bilingual Amharic–English local demonstration for explainable pr
 
 These commands work in Windows Command Prompt or PowerShell, as well as Linux and macOS terminals. Run them from the repository root:
 
-```bash
-# Install dependencies
-corepack pnpm install
+Install dependencies:
 
-# Start local development server
+```text
+corepack pnpm install
+```
+
+Start the local development server:
+
+```text
 corepack pnpm dev
 ```
 
