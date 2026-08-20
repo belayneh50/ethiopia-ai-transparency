@@ -7,13 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"pnpm --filter api dev\" \"pnpm --filter public-portal dev\"",
-    "build": "pnpm --filter api build && pnpm --filter public-portal build",
-    "test": "pnpm --filter api test && pnpm --filter public-portal test",
-    "lint": "pnpm --filter api lint && pnpm --filter public-portal lint",
-    "db:push": "pnpm --filter database push",
-    "db:migrate": "pnpm --filter database migrate",
-    "db:studio": "pnpm --filter database studio"
+    "postinstall": "corepack pnpm --filter api exec prisma generate --schema=../../packages/database/schema.prisma",
+    "dev": "concurrently \"corepack pnpm --filter api dev\" \"corepack pnpm --filter public-portal dev\"",
+    "build": "corepack pnpm --filter api build && corepack pnpm --filter public-portal build",
+    "test": "corepack pnpm --filter api test && corepack pnpm --filter public-portal test",
+    "lint": "corepack pnpm --filter api lint && corepack pnpm --filter public-portal lint",
+    "db:push": "corepack pnpm --filter database push",
+    "db:migrate": "corepack pnpm --filter database migrate",
+    "db:studio": "corepack pnpm --filter database studio"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
