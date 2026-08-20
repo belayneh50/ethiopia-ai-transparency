@@ -62,10 +62,10 @@ A lightweight bilingual Amharic–English local demonstration for explainable pr
 
 ```bash
 # Install dependencies
-npm install
+corepack pnpm install
 
 # Start local development server
-npm run dev
+corepack pnpm dev
 ```
 
 Open the local URL shown by Vite (usually `http://localhost:5173`).
@@ -73,13 +73,13 @@ Open the local URL shown by Vite (usually `http://localhost:5173`).
 ### Run Unit Tests
 
 ```bash
-npm test
+corepack pnpm test
 ```
 
 ### Build for Production
 
 ```bash
-npm run build
+corepack pnpm build
 ```
 
 The production assets will be built in `dist/`.
