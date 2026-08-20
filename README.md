@@ -78,7 +78,7 @@ Keep the terminal open while the development server is running, then open [http:
 
 #### One-click Windows launcher
 
-After installing dependencies once, double-click `start-local.cmd` in the repository folder. Keep its Command Prompt window open, then use the local address displayed there. The launcher automatically starts from the correct project folder.
+After installing dependencies once, double-click `start-local.cmd` in the repository folder. Keep its Command Prompt window open. The launcher automatically starts from the correct project folder and opens [http://localhost:5173](http://localhost:5173) in the default browser when the site is ready.
 
 ### Run Unit Tests
 
