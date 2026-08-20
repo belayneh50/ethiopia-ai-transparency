@@ -219,6 +219,7 @@ export function RecordTable({
                 <td>
                   <strong>{showEn && record.item}</strong>
                   {showAm && <span className="am">{record.itemAm}</span>}
+                  {record.quantity && <small>{record.quantity} {record.unit || "units"}</small>}
                   <small>{showEn ? record.category : record.categoryAm}</small>
                 </td>
                 <td>

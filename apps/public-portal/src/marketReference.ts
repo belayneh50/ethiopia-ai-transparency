@@ -27,6 +27,13 @@ export function extractRecordQuantity(item: string): number | null {
   return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null;
 }
 
+export function resolveRecordQuantity(item: string, explicitQuantity?: number): number | null {
+  if (explicitQuantity !== undefined) {
+    return Number.isSafeInteger(explicitQuantity) && explicitQuantity > 0 ? explicitQuantity : null;
+  }
+  return extractRecordQuantity(item);
+}
+
 export function calculateMarketReference(listings: ComparableListing[], recordUnitPrice: number | null): MarketReferenceSummary | null {
   if (!listings.length) return null;
   const prices = listings.map(listing => listing.price).sort((a, b) => a - b);

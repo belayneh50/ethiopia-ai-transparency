@@ -6,7 +6,7 @@ import { HumanReviewPanel } from "./HumanReviewPanel";
 import { MarketReferencePanel } from "./MarketReferencePanel";
 import { GeminiGuidancePanel } from "./GeminiGuidancePanel";
 import { AuditMemoReport } from "./AuditMemoReport";
-import { extractRecordQuantity, calculateMarketReference, type ComparableListing } from "../marketReference";
+import { resolveRecordQuantity, calculateMarketReference, type ComparableListing } from "../marketReference";
 import type { ReviewStatus } from "../reviewFilter";
 import type { GeminiReviewGuidance } from "../geminiService";
 import type { Language, RecordItem, SignalDefinition, SignalKey } from "../types";
@@ -47,7 +47,7 @@ export function RecordDetailModal({
   const showEn = language !== "am";
   const showAm = language !== "en";
 
-  const recordQuantity = extractRecordQuantity(record.item);
+  const recordQuantity = resolveRecordQuantity(record.item, record.quantity);
   const recordUnitPrice = recordQuantity ? record.value / recordQuantity : null;
   const marketSummary = calculateMarketReference(comparables, recordUnitPrice);
   const unitComparisonAvailable =

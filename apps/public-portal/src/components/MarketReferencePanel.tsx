@@ -3,7 +3,7 @@ import { Dual } from "./Dual";
 import { PriceBenchmarkChart } from "./PriceBenchmarkChart";
 import {
   calculateMarketReference,
-  extractRecordQuantity,
+  resolveRecordQuantity,
   type ComparableListing,
 } from "../marketReference";
 import type { Language, RecordItem } from "../types";
@@ -40,7 +40,7 @@ export function MarketReferencePanel({
   const fieldText = (en: string, am: string) =>
     language === "am" ? am : language === "en" ? en : `${en} · ${am}`;
 
-  const recordQuantity = extractRecordQuantity(record.item);
+  const recordQuantity = resolveRecordQuantity(record.item, record.quantity);
   const recordUnitPrice = recordQuantity ? record.value / recordQuantity : null;
   const marketSummary = calculateMarketReference(comparables, recordUnitPrice);
   const unitComparisonAvailable =
@@ -221,7 +221,9 @@ export function MarketReferencePanel({
                 <span className="market-card-label">
                   <Dual en="Record quantity" am="የዕቃው ብዛት" separator=" / " />
                 </span>
-                <b className="market-card-value">{money.format(recordQuantity)}</b>
+                <b className="market-card-value">
+                  {money.format(recordQuantity)}{record.unit ? ` ${record.unit}` : ""}
+                </b>
               </div>
               <div className="market-summary-card">
                 <span className="market-card-label">
@@ -249,16 +251,16 @@ export function MarketReferencePanel({
           ) : (
             <p className="form-error">
               <Dual
-                en="A quantity could not be detected from this synthetic record label, so no per-unit comparison is calculated. An authorized reviewer must verify quantity rather than infer it."
-                am="ከዚህ ሰው ሰራሽ መዝገብ ስያሜ ብዛት ሊለይ አልቻለም፤ ስለዚህ የአንድ እቃ ማነጻጸሪያ አልተሰላም። ፈቃድ ያለው ገምጋሚ ብዛቱን ማረጋገጥ አለበት እንጂ መገመት የለበትም።"
+                en="This record has no valid quantity, so no per-unit comparison is calculated. An authorized reviewer must enter or verify the quantity."
+                am="ይህ መዝገብ ትክክለኛ ብዛት የለውም፤ ስለዚህ የአንድ እቃ ማነጻጸሪያ አልተሰላም። ፈቃድ ያለው ገምጋሚ ብዛቱን ማስገባት ወይም ማረጋገጥ አለበት።"
               />
             </p>
           )}
 
           <small className="formula">
             <Dual
-              en="Method: record unit price = total record value ÷ explicit quantity in the record label. Sort reviewer-entered unit prices; median = middle price (or mean of two middle prices). Comparison = record unit price − median unit price."
-              am="ስሌት ዘዴ፦ የመዝገብ የአንድ እቃ ዋጋ = ጠቅላላ የመዝገብ ዋጋ ÷ በመዝገብ ስያሜው የተገለጸ ብዛት። በገምጋሚ የገቡ የአንድ እቃ ዋጋዎችን መደርደር፤ መካከለኛ = መሃል ዋጋ (ወይም የሁለቱ መሃል ዋጋዎች አማካይ)። ማነጻጸሪያ = የመዝገብ የአንድ እቃ ዋጋ − መካከለኛ የአንድ እቃ ዋጋ።"
+              en="Method: record unit price = total record value ÷ verified quantity. Sort reviewer-entered unit prices; median = middle price (or mean of two middle prices). Comparison = record unit price − median unit price."
+              am="ስሌት ዘዴ፦ የመዝገብ የአንድ እቃ ዋጋ = ጠቅላላ የመዝገብ ዋጋ ÷ የተረጋገጠ ብዛት። በገምጋሚ የገቡ የአንድ እቃ ዋጋዎችን መደርደር፤ መካከለኛ = መሃል ዋጋ (ወይም የሁለቱ መሃል ዋጋዎች አማካይ)። ማነጻጸሪያ = የመዝገብ የአንድ እቃ ዋጋ − መካከለኛ የአንድ እቃ ዋጋ።"
             />
           </small>
         </div>

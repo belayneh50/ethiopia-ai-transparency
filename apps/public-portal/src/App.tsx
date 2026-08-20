@@ -10,7 +10,7 @@ import { Dual } from "./components/Dual";
 import { ShieldNotice } from "./components/ShieldNotice";
 import { SettingsProvider, useSettings } from "./SettingsContext";
 import { createFallbackGuidance, requestGeminiGuidance, type GeminiReviewGuidance } from "./geminiService";
-import { calculateMarketReference, extractRecordQuantity, type ComparableListing } from "./marketReference";
+import { calculateMarketReference, resolveRecordQuantity, type ComparableListing } from "./marketReference";
 import { matchesReviewFilter, type ReviewFilter, type ReviewStatus } from "./reviewFilter";
 import type { AddRecordData, AuditSessionExport, Language, RecordItem, SignalDefinition, SignalKey } from "./types";
 
@@ -255,6 +255,8 @@ export default function App() {
       buyer: formData.buyer,
       supplier: formData.supplier,
       value: formData.value,
+      quantity: formData.quantity,
+      unit: formData.unit,
       date: approval.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
@@ -307,7 +309,7 @@ export default function App() {
   const handleAskGemini = async () => {
     if (!selected || geminiLoading) return;
     const comparables = comparablesByRecord[selected.id] || [];
-    const recordQuantity = extractRecordQuantity(selected.item);
+    const recordQuantity = resolveRecordQuantity(selected.item, selected.quantity);
     const recordUnitPrice = recordQuantity ? selected.value / recordQuantity : null;
     const marketSummary = calculateMarketReference(comparables, recordUnitPrice);
 
