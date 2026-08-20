@@ -60,6 +60,8 @@ A lightweight bilingual Amharic–English local demonstration for explainable pr
 
 ### Installation & Run
 
+These commands work in Windows Command Prompt or PowerShell, as well as Linux and macOS terminals. Run them from the repository root:
+
 ```bash
 # Install dependencies
 corepack pnpm install
@@ -68,7 +70,7 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-Open the local URL shown by Vite (usually `http://localhost:5173`).
+Keep the terminal open while the development server is running, then open [http://localhost:5173](http://localhost:5173) in your browser. If Vite selects a different available port, use the local address printed in the terminal. Press `Ctrl+C` to stop the server.
 
 ### Run Unit Tests
 
