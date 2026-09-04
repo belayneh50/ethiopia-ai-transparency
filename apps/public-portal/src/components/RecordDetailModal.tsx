@@ -25,6 +25,7 @@ type RecordDetailModalProps = {
   onAddComparable: (listing: ComparableListing) => void;
   onRemoveComparable: (id: string) => void;
   onAskGemini: () => void;
+  onOpenFayda: () => void;
 };
 
 type TabKey = "overview" | "market" | "review" | "guidance";
@@ -41,6 +42,7 @@ export function RecordDetailModal({
   onAddComparable,
   onRemoveComparable,
   onAskGemini,
+  onOpenFayda,
 }: RecordDetailModalProps) {
   const [showMemo, setShowMemo] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -192,6 +194,7 @@ export function RecordDetailModal({
               record={record}
               language={language}
               onSaveReview={onSaveReview}
+              onOpenFayda={onOpenFayda}
             />
           )}
 

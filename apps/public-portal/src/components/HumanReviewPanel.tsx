@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { Dual } from "./Dual";
 import { REVIEW_STATUSES, type ReviewStatus } from "../reviewFilter";
+import { maskFin, useFayda } from "../FaydaContext";
 import type { Language, RecordItem } from "../types";
 
 type HumanReviewPanelProps = {
   record: RecordItem;
   language: Language;
   onSaveReview: (recordId: string, status: ReviewStatus, note: string) => void;
+  onOpenFayda: () => void;
 };
 
-export function HumanReviewPanel({ record, language, onSaveReview }: HumanReviewPanelProps) {
+export function HumanReviewPanel({ record, language, onSaveReview, onOpenFayda }: HumanReviewPanelProps) {
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus>(record.reviewStatus ?? "pending");
   const [reviewNote, setReviewNote] = useState<string>(record.reviewNote ?? "");
+  const { verification } = useFayda();
+  const canSignOff = verification !== null;
 
   useEffect(() => {
     setReviewStatus(record.reviewStatus ?? "pending");
@@ -85,13 +89,34 @@ export function HumanReviewPanel({ record, language, onSaveReview }: HumanReview
           <strong>{fieldText(REVIEW_STATUSES[record.reviewStatus].en, REVIEW_STATUSES[record.reviewStatus].am)}</strong>
           {record.reviewNote && <p>{fieldText(`Note: ${record.reviewNote}`, `ማስታወሻ፦ ${record.reviewNote}`)}</p>}
           {record.reviewDate && <small>{fieldText(`Last updated: ${record.reviewDate}`, `መጨረሻ የተዘመነው፦ ${record.reviewDate}`)}</small>}
+          {record.reviewSignedBy && (
+            <small className="review-signed-by">
+              ✒ {fieldText(`Signed by ${record.reviewSignedBy.name} (FIN ${maskFin(record.reviewSignedBy.fin)})`, `የተፈረመው በ ${record.reviewSignedBy.name} (FIN ${maskFin(record.reviewSignedBy.fin)})`)}
+            </small>
+          )}
+        </div>
+      )}
+
+      {reviewStatus !== "pending" && !canSignOff && (
+        <div className="review-fayda-gate" role="status">
+          <span aria-hidden="true">⚠</span>
+          <span>
+            <Dual
+              en="Fayda eKYC verification is required to sign off a review. Verify first — the sign-off will be tied to your Fayda identity."
+              am="የግምገማ ፊርማ ለማስፈረም የፋይዳ eKYC ማረጋገጫ ያስፈልጋል። መጀመሪያ ያረጋግጡ — ፊርማው ከፋይዳ ማንነትዎ ጋር ይተሳሰራል።"
+              separator=""
+            />
+          </span>
+          <button type="button" className="verify-fayda-btn" onClick={onOpenFayda}>
+            <Dual en="Verify with Fayda" am="በፋይዳ አረጋግጥ" separator="" />
+          </button>
         </div>
       )}
 
       <button
         className="save-review"
         onClick={() => onSaveReview(record.id, reviewStatus, reviewNote)}
-        disabled={reviewStatus === "pending"}
+        disabled={reviewStatus === "pending" || !canSignOff}
       >
         <Dual en="Save local review" am="የግምገማ ውጤት አስቀምጥ" separator="" />
       </button>
