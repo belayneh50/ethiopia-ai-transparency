@@ -49,7 +49,7 @@ corepack pnpm setup       # 2. one-time: env files + Postgres + Prisma client/sc
 corepack pnpm dev         # 3. start the API (:3001) and the portal (:5173)
 ```
 
-Then open [http://localhost:5173](http://localhost:5173) and sign in with a synthetic demo account. The login page's "Demo accounts" panel lists the usernames; passwords are documented next to them in `apps/public-portal/src/auth/demoAccounts.ts` and `packages/database/prisma/seed.ts` (demo credentials, not secrets):
+Then open [http://localhost:5173](http://localhost:5173) and sign in with a synthetic demo account. The login page's "Demo accounts" panel lists the usernames; passwords are documented next to them in `packages/shared-types/index.ts` — the single source both the Prisma seed and the portal panel derive from, so the seeded logins and the quick-fill list can never drift (demo credentials, not secrets):
 
 | Username | Role |
 | --- | --- |
@@ -97,6 +97,9 @@ corepack pnpm build      # nest build + tsc/vite build
 - Bilingual (Amharic–English) login screen with masked password + show/hide eye toggle, full keyboard support, and `prefers-reduced-motion` handling.
 - Four synthetic roles (`admin`, `recorder`, `reviewer`, `viewer`) mapped to a UI permission matrix in `apps/public-portal/src/auth/roles.ts` and enforced server-side by `RolesGuard` in `apps/api`.
 - Passwords are never persisted (token + user only), cleared after failed login/logout.
+- Sign-in state lives in `sessionStorage`, not `localStorage`: a fresh window or new browser session always starts at the login page, while a same-tab reload keeps you signed in; logging out clears the session. The demo records state stays in `localStorage` and is untouched by login/logout.
+- The topbar is fluid: at any desktop width the action cluster (language toggle, role badge, `Log out · ውጣ`) wraps onto its own row instead of being pushed off-screen, and the Records/Method nav links stay visible whenever they fit.
+- UX polish: higher-contrast inactive modal tabs, a faint vertical divider between the English and Amharic form columns in the add-record modal, and a capped line length for the Amharic hero subtitle.
 
 ### 2. Visual Price Benchmark Gauge (`PriceBenchmarkChart`)
 - Displays an intuitive linear distribution gauge comparing the observed market range (`Low` to `High`) with the `Median`.
@@ -115,10 +118,12 @@ corepack pnpm build      # nest build + tsc/vite build
 - The portal lives under `apps/public-portal/src/components/` with single-responsibility pieces: `Topbar.tsx`, `SummaryMetrics.tsx`, `RecordTable.tsx`, `ReviewSummaryBar.tsx`, `RecordDetailModal.tsx`, `HumanReviewPanel.tsx`, `MarketReferencePanel.tsx`, `PriceBenchmarkChart.tsx`, `GeminiGuidancePanel.tsx`, `AddRecordModal.tsx`, `ExportAuditModal.tsx`, plus reusable `Dual.tsx` and `ShieldNotice.tsx`.
 
 ### 5. Automated Testing Suite
-- Powered by **Vitest** for fast unit testing of calculations, schemas, and guardrails:
+- **API e2e** (Jest, `apps/api/test/auth-rbac.e2e.spec.ts`, 21 tests): boots the real Nest `AppModule` on an ephemeral port against a dedicated test database that is created, schema-pushed, seeded, and dropped per run — the dev database is never touched and no manually-started servers are needed. It locks the login/RBAC contract: 201 for the four demo users, 401 on bad credentials and anonymous calls, 403/200 per the role matrix (recorder may create records but is denied review/comparables/audit; reviewer may review but not create; viewer is read-only), least-privilege register that ignores any body role, 400 on junk bodies, and 409 on duplicates.
+- **Portal unit tests** (Vitest):
   - `marketReference.test.ts`: Deterministic median calculations (odd/even), unit price division, and quantity regex extraction.
   - `geminiResponseAdapter.test.ts`: JSON parsing, candidate extraction, and regex rejection of prohibited accusatory words or risk scores.
   - `reviewFilter.test.ts`: Status filter predicates and bilingual status mappings.
+  - `authStorage.test.ts`: Purge-on-load removes legacy `localStorage` auth keys, login writes to `sessionStorage` only, logout clears the session, and the demo records keys survive the whole lifecycle.
 
 ---
 
@@ -163,6 +168,6 @@ Then submit one synthetic record through **AI Guidance**. A successful request r
 
 ## Repository Status
 
-- Branch `feature/login-and-rbac` adds the login screen, four synthetic roles, the JWT backend (NestJS + Prisma/PostgreSQL) with role-gated endpoints, and the seeded demo users.
+- The login/RBAC work — login screen, four synthetic roles, the JWT backend (NestJS + Prisma/PostgreSQL) with role-gated endpoints, the seeded demo users, and the API e2e suite — is merged into `main`.
 - The review portal itself remains a client-side synthetic demo: records live in the browser's `localStorage`; only sign-in is delegated to the API.
-- Known follow-ups: gate the portal's Gemini proxy by role, add API test coverage for the role matrix, and normalize line endings (`.gitattributes`).
+- Known follow-ups: gate the portal's Gemini proxy by role, and make the API the source of truth for records — the guarded endpoints exist and are tested, but the portal only calls the API for login so far.
