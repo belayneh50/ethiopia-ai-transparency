@@ -1,0 +1,16 @@
+# Normalize line endings: text files are stored and checked out as LF.
+# Without these rules, per-OS core.autocrlf produces warnings and churn
+# (e.g. on jwt-auth.guard.ts and pnpm-lock.yaml).
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.prisma text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf

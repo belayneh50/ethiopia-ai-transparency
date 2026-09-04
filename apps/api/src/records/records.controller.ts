@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, Delete } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { RecordsService } from './records.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard, RolesGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole, ReviewStatus } from '@ethiopia-ai/shared-types';
 
@@ -17,6 +18,7 @@ export class CreateRecordDto {
   paymentDate!: string;
   status!: string;
   statusAm!: string;
+  date?: string;
 }
 
 export class ReviewRecordDto {
@@ -38,14 +40,15 @@ export class ComparableDto {
 }
 
 @Controller('records')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RecordsController {
   constructor(private readonly recordsService: RecordsService) {}
 
+  // Matches the portal's 'addEditRecord' capability (admin + recorder/governor).
   @Post()
-  @Roles(UserRole.reviewer, UserRole.governor, UserRole.admin)
-  async create(@Request() req, @Body() dto: CreateRecordDto) {
-    return this.recordsService.create(req.user.userId, dto);
+  @Roles(UserRole.governor, UserRole.admin)
+  async create(@Request() req: ExpressRequest, @Body() dto: CreateRecordDto) {
+    return this.recordsService.create((req as any).user.userId, dto);
   }
 
   @Get()
@@ -60,27 +63,30 @@ export class RecordsController {
     return this.recordsService.findOne(id);
   }
 
+  // Matches the portal's 'performHumanReview' capability (admin + reviewer).
   @Post(':id/review')
-  @Roles(UserRole.reviewer, UserRole.governor, UserRole.admin)
-  async review(@Request() req, @Param('id') id: string, @Body() dto: ReviewRecordDto) {
-    return this.recordsService.review(req.user.userId, id, dto);
+  @Roles(UserRole.reviewer, UserRole.admin)
+  async review(@Request() req: ExpressRequest, @Param('id') id: string, @Body() dto: ReviewRecordDto) {
+    return this.recordsService.review((req as any).user.userId, id, dto);
   }
 
+  // Matches the portal's 'addVerifyComparable' capability (admin + reviewer).
   @Post(':id/comparables')
-  @Roles(UserRole.reviewer, UserRole.governor, UserRole.admin)
-  async addComparable(@Request() req, @Param('id') id: string, @Body() dto: ComparableDto) {
-    return this.recordsService.addComparable(req.user.userId, id, dto);
+  @Roles(UserRole.reviewer, UserRole.admin)
+  async addComparable(@Request() req: ExpressRequest, @Param('id') id: string, @Body() dto: ComparableDto) {
+    return this.recordsService.addComparable((req as any).user.userId, id, dto);
   }
 
+  // Matches the portal's 'addVerifyComparable' capability (admin + reviewer).
   @Delete(':id/comparables/:comparableId')
-  @Roles(UserRole.reviewer, UserRole.governor, UserRole.admin)
-  async removeComparable(@Request() req, @Param('id') id: string, @Param('comparableId') comparableId: string) {
-    return this.recordsService.removeComparable(req.user.userId, id, comparableId);
+  @Roles(UserRole.reviewer, UserRole.admin)
+  async removeComparable(@Request() req: ExpressRequest, @Param('id') id: string, @Param('comparableId') comparableId: string) {
+    return this.recordsService.removeComparable((req as any).user.userId, id, comparableId);
   }
 
   @Post('import')
   @Roles(UserRole.admin)
-  async import(@Request() req, @Body() body: { records: any[] }) {
-    return this.recordsService.import(req.user.userId, body.records);
+  async import(@Request() req: ExpressRequest, @Body() body: { records: any[] }) {
+    return this.recordsService.import((req as any).user.userId, body.records);
   }
 }

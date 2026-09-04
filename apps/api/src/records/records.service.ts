@@ -14,12 +14,25 @@ export class RecordsService {
   async create(userId: string, dto: CreateRecordDto) {
     const daysOpen = this.calculateDaysOpen(dto.approvalDate, dto.paymentDate);
     const signals = this.detectSignals(dto.value, dto.supplier, daysOpen, []);
-    
+
+    // Build the Prisma payload field-by-field against the real Record columns
+    // (schema.prisma). Spreading the DTO used to leak non-column fields such as
+    // approvalDate/paymentDate into the create, which Prisma rejects with 500.
     const record = await this.prisma.record.create({
       data: {
         recordId: `SYN-ET-${Date.now().toString(36).toUpperCase()}`,
-        ...dto,
+        item: dto.item,
+        itemAm: dto.itemAm,
+        category: dto.category,
+        categoryAm: dto.categoryAm,
+        buyer: dto.buyer,
+        supplier: dto.supplier,
+        value: dto.value,
+        date: dto.date ?? dto.approvalDate,
+        status: dto.status,
+        statusAm: dto.statusAm,
         daysOpen,
+        bids: dto.bids,
         signals,
       },
       include: { comparables: true },
@@ -38,7 +51,7 @@ export class RecordsService {
 
   async findAll(query: any) {
     const { page = 1, limit = 20, category, status, reviewStatus, search, sortBy = 'createdAt', order = 'desc' } = query;
-    
+
     const where: any = {};
     if (category) where.category = { contains: category, mode: 'insensitive' };
     if (status) where.status = status;
@@ -86,7 +99,7 @@ export class RecordsService {
     const updated = await this.prisma.record.update({
       where: { id },
       data: {
-        reviewStatus: dto.reviewStatus,
+        reviewStatus: dto.reviewStatus === "needs-docs" ? "needsDocs" : dto.reviewStatus === "under-review" ? "underReview" : dto.reviewStatus === "no-concern" ? "noConcern" : (dto.reviewStatus as any),
         reviewNote: dto.reviewNote,
         reviewDate: new Date().toISOString(),
         reviewedBy: userId,
@@ -149,7 +162,7 @@ export class RecordsService {
 
   async import(userId: string, records: any[]) {
     const results = [];
-    
+
     for (const record of records) {
       const created = await this.create(userId, record);
       results.push(created);

@@ -16,6 +16,17 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"
   },
+  "jest": {
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]
+    },
+    "globalSetup": "<rootDir>/test/global-setup.js",
+    "globalTeardown": "<rootDir>/test/global-teardown.js",
+    "setupFiles": ["<rootDir>/test/jest-env.js"]
+  },
   "dependencies": {
     "@ethiopia-ai/shared-types": "workspace:*",
     "@nestjs/common": "^10.3.5",

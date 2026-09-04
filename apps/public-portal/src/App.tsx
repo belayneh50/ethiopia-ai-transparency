@@ -9,6 +9,9 @@ import { ThresholdSettingsModal } from "./components/ThresholdSettingsModal";
 import { Dual } from "./components/Dual";
 import { ShieldNotice } from "./components/ShieldNotice";
 import { SettingsProvider, useSettings } from "./SettingsContext";
+import { useAuth } from "./auth/AuthContext";
+import { LoginScreen } from "./components/LoginScreen";
+import { can, type Capability } from "./auth/roles";
 import { createFallbackGuidance, requestGeminiGuidance, type GeminiReviewGuidance } from "./geminiService";
 import { calculateMarketReference, resolveRecordQuantity, type ComparableListing } from "./marketReference";
 import { matchesReviewFilter, type ReviewFilter, type ReviewStatus } from "./reviewFilter";
@@ -131,6 +134,7 @@ export default function App() {
   const [geminiLoading, setGeminiLoading] = useState(false);
 
   const { settings } = useSettings();
+  const { isAuthenticated, user, logout, role, can } = useAuth();
 
   const showEn = language !== "am";
   const showAm = language !== "en";
@@ -374,7 +378,7 @@ export default function App() {
 
   const selectedComparables = selected ? comparablesByRecord[selected.id] || [] : [];
 
-  return (
+  return isAuthenticated ? (
     <main className={`lang-${language}`}>
       <Topbar
         language={language}
@@ -432,6 +436,7 @@ export default function App() {
         onOpenAddModal={() => setAddModalOpen(true)}
         onSelectRecord={openDetails}
         onResetReviews={handleResetReviews}
+        canAddRecord={can('addEditRecord')}
       />
 
       <section className="method" id="method">
@@ -534,5 +539,7 @@ export default function App() {
         />
       )}
     </main>
+  ) : (
+    <LoginScreen language={language} onLanguageChange={setLanguage} />
   );
 }

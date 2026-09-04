@@ -1,24 +1,26 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from './roles.decorator';
 import { UserRole } from '@ethiopia-ai/shared-types';
 
-export const ROLES_KEY = 'roles';
+// Validates the Bearer token via the Passport "jwt" strategy (see JwtStrategy)
+// and attaches the authenticated user to request.user.
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
 
-export const Roles = (...roles: UserRole[]) => {
-  return (target: any, key?: any, descriptor?: any) => {
-    if (descriptor) {
-      return roles;
-    }
-    return roles;
-  };
-};
-
+// Enforces @Roles(...) metadata declared on a handler or controller class.
+// Must be applied after JwtAuthGuard so that request.user is populated.
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<UserRole[]>(ROLES_KEY, context.getHandler());
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -30,16 +32,10 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Authentication required');
     }
 
-    const hasRole = requiredRoles.includes(user.role);
-    if (!hasRole) {
-      throw new UnauthorizedException('Insufficient permissions');
+    if (!requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Insufficient permissions for this role');
     }
 
     return true;
   }
-}
-
-@Injectable()
-export class JwtAuthGuard {
-  // NestJS will auto-resolve PassportModule guards when activated via @UseGuards(JwtAuthGuard)
 }

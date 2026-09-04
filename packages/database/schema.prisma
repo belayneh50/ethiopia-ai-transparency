@@ -25,6 +25,7 @@ model Record {
   signals           String[] // ["price", "repeat", "delay"]
   reviewStatus      ReviewStatus? @default(pending) @map("review_status")
   reviewNote        String?   @map("review_note")
+  publicReviewSummary String? @map("public_review_summary")
   reviewDate        String?   @map("review_date")
   reviewedBy        String?   @map("reviewed_by")
   comparables       ComparableListing[]
@@ -80,6 +81,7 @@ model GeminiGuidance {
 model AuditLog {
   id          String   @id @default(cuid())
   recordId    String?  @map("record_id")
+  record      Record?  @relation(fields: [recordId], references: [id], onDelete: SetNull)
   action      String   // "create", "update", "review", "delete"
   entityType  String   @map("entity_type") // "record", "review", "comparable"
   entityId    String   @map("entity_id")
@@ -99,6 +101,7 @@ model User {
   id           String    @id @default(cuid())
   email        String    @unique
   name         String
+  passwordHash String?   @map("password_hash")
   role         UserRole  @default(reviewer)
   isActive     Boolean   @default(true) @map("is_active")
   lastLoginAt  DateTime? @map("last_login_at")

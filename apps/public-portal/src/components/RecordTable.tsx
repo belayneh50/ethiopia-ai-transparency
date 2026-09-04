@@ -1,5 +1,6 @@
 import { Dual } from "./Dual";
 import { ReviewSummaryBar } from "./ReviewSummaryBar";
+import { can } from "../auth/roles";
 import {
   REVIEW_FILTER_OPTIONS,
   REVIEW_STATUSES,
@@ -22,12 +23,13 @@ type RecordTableProps = {
   signalsMap: Record<SignalKey, SignalDefinition>;
   onQueryChange: (q: string) => void;
   onBuyerChange: (b: string) => void;
-  onSignalFilterChange: (s: "all" | "flagged" | SignalKey) => void;
-  onReviewFilterChange: (r: ReviewFilter) => void;
+  onSignalFilterChange: (f: "all" | "flagged" | SignalKey) => void;
+  onReviewFilterChange: (f: ReviewFilter) => void;
   onResetFilters: () => void;
   onOpenAddModal: () => void;
-  onSelectRecord: (record: RecordItem) => void;
+  onSelectRecord: (r: RecordItem) => void;
   onResetReviews: () => void;
+  canAddRecord?: boolean;
 };
 
 export function RecordTable({
@@ -49,6 +51,7 @@ export function RecordTable({
   onOpenAddModal,
   onSelectRecord,
   onResetReviews,
+  canAddRecord,
 }: RecordTableProps) {
   const showEn = language !== "am";
   const showAm = language !== "en";
@@ -82,7 +85,7 @@ export function RecordTable({
           <p className="am-only">
             ከ{records.length} ውስጥ {visibleRecords.length} ታይቷል
           </p>
-          <button className="add-record-btn" onClick={onOpenAddModal}>
+          <button className="add-record-btn" onClick={onOpenAddModal} style={canAddRecord ? undefined : { display: 'none' }}>
             <span className="en-only">+ Add sample record</span>
             <span className="am-only">+ የሙከራ መዝገብ ጨምር</span>
           </button>
