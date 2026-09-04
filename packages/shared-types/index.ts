@@ -2,6 +2,58 @@ export type SignalKey = "price" | "repeat" | "delay";
 
 export type Language = "both" | "am" | "en";
 
+export const UserRole = {
+  public: "public",
+  reviewer: "reviewer",
+  governor: "governor",
+  admin: "admin",
+} as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+// SINGLE SOURCE OF TRUTH for the synthetic demo accounts. Both the Prisma seed
+// (packages/database/prisma/seed.ts) and the portal account list
+// (apps/public-portal/src/auth/demoAccounts.ts) derive from this one array, so
+// the seeded logins and the portal's quick-reference panel can never drift.
+// Passwords are documented and inspectable on purpose — local demo only.
+export type DemoAccount = {
+  username: string;
+  password: string; // documented, not a secret
+  name: string; // display name the API returns for the account
+  displayName: { en: string; am: string }; // portal account-panel labels
+  role: UserRole; // backend role; the portal maps it via mapUserRoleToRole
+};
+
+export const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    username: "admin.demo",
+    password: "Adm1n!2026$ecure",
+    name: "Demo Admin",
+    displayName: { en: "Demo Admin", am: "የማሳያ አስተዳዳሪ" },
+    role: "admin",
+  },
+  {
+    username: "recorder.demo",
+    password: "R3c0rd3r!2026$ecure",
+    name: "Demo Recorder (Governor)",
+    displayName: { en: "Demo Recorder", am: "የማሳያ መዝገቢያ" },
+    role: "governor",
+  },
+  {
+    username: "reviewer.demo",
+    password: "R3v13w3r!2026$ecure",
+    name: "Demo Reviewer",
+    displayName: { en: "Demo Reviewer", am: "የማሳያ እርምጃ ሰራሽ" },
+    role: "reviewer",
+  },
+  {
+    username: "viewer.demo",
+    password: "V13wer!2026$ecure",
+    name: "Demo Read-only (Public)",
+    displayName: { en: "Demo Read-only", am: "የማሳያ ንባብ ብቻ" },
+    role: "public",
+  },
+];
+
 export type ReviewStatus = "pending" | "needs-docs" | "under-review" | "no-concern" | "referred";
 
 export type ReviewFilter = "all" | "not-reviewed" | Exclude<ReviewStatus, "pending">;

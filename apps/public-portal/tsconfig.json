@@ -17,7 +17,8 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ethiopia-ai/shared-types": ["../../packages/shared-types"]
     }
   },
   "include": ["src"],

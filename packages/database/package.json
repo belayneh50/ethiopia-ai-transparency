@@ -3,11 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "main": "./index.ts",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "seed": "tsx prisma/seed.ts",
+    "push": "prisma db push",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio",
+    "generate": "prisma generate"
+  },
   "dependencies": {
     "@prisma/client": "^5.12.1"
   },
   "devDependencies": {
     "prisma": "^5.12.1",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
 }

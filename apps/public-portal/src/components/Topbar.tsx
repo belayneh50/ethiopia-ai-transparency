@@ -1,4 +1,7 @@
 import { Dual } from "./Dual";
+import { LogoutButton } from "./LogoutButton";
+import { RoleBadge } from "./RoleBadge";
+import { useAuth } from "../auth/AuthContext";
 import type { Language } from "../types";
 
 type TopbarProps = {
@@ -63,6 +66,9 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
             </button>
           ))}
         </div>
+
+        <RoleBadge language={language} />
+        <LogoutButton />
       </div>
     </header>
   );

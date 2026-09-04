@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "corepack pnpm --filter api exec prisma generate --schema=../../packages/database/schema.prisma",
+    "setup": "node -e \"const fs=require('fs');const ex=fs.readFileSync('.env.example','utf8');for(const f of ['.env','apps/api/.env','packages/database/.env']){if(!fs.existsSync(f)){fs.writeFileSync(f,ex);console.log('created ' + f + ' from .env.example');}}\" && docker compose up -d postgres && corepack pnpm --filter database exec prisma generate && corepack pnpm db:push && corepack pnpm --filter database exec prisma db seed",
     "dev": "concurrently \"corepack pnpm --filter api dev\" \"corepack pnpm --filter public-portal dev\"",
     "build": "corepack pnpm --filter api build && corepack pnpm --filter public-portal build",
     "test": "corepack pnpm --filter api test && corepack pnpm --filter public-portal test",
