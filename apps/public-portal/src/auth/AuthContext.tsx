@@ -22,7 +22,7 @@ export type AuthUser = {
 
 export type LoginResult = { ok: true } | { ok: false; error: string };
 
-type AuthContextValue = {
+export type AuthContextValue = {
   user: AuthUser | null;
   token: string | null;
   role: Role | null;
@@ -32,7 +32,7 @@ type AuthContextValue = {
   can: (action: Capability) => boolean;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 // Storage rules live in ./authStorage (pure, unit-tested): auth persists in
 // sessionStorage ONLY, legacy localStorage auth keys are purged on every read,

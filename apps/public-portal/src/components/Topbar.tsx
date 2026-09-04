@@ -2,6 +2,7 @@ import { Dual } from "./Dual";
 import { LogoutButton } from "./LogoutButton";
 import { RoleBadge } from "./RoleBadge";
 import { useAuth } from "../auth/AuthContext";
+import { maskFin, useFayda } from "../FaydaContext";
 import type { Language } from "../types";
 
 type TopbarProps = {
@@ -9,9 +10,12 @@ type TopbarProps = {
   onLanguageChange: (lang: Language) => void;
   onOpenExportModal: () => void;
   onOpenSettingsModal: () => void;
+  onOpenFaydaModal: () => void;
+  onOpenVendorModal: () => void;
 };
 
-export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSettingsModal }: TopbarProps) {
+export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSettingsModal, onOpenFaydaModal, onOpenVendorModal }: TopbarProps) {
+  const { verification } = useFayda();
   return (
     <header className="topbar">
       <a className="brand" href="#top">
@@ -53,6 +57,40 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
           aria-label="Open threshold settings"
         >
           <Dual en="Thresholds" am="መገደቦች" />
+        </button>
+
+        <button
+          className="topbar-session-btn"
+          onClick={onOpenFaydaModal}
+          title={
+            verification
+              ? `Fayda eKYC verified as ${verification.fullName} (FIN ${maskFin(verification.fin)})`
+              : "Open the simulated Fayda eKYC verification demo"
+          }
+          aria-label="Fayda eKYC status — click to verify or view"
+        >
+          {verification ? (
+            <span className="ekyc-chip ekyc-verified">
+              <Dual
+                en={`eKYC ✓ ${verification.fullName.split(" ")[0]}`}
+                am={`eKYC ✓ ${verification.fullName.split(" ")[0]}`}
+                separator=""
+              />
+            </span>
+          ) : (
+            <span className="ekyc-chip">
+              <Dual en="eKYC: Unverified" am="eKYC: ያልተረጋገጠ" separator="" />
+            </span>
+          )}
+        </button>
+
+        <button
+          className="topbar-session-btn"
+          onClick={onOpenVendorModal}
+          title="Register a supplier with Fayda eKYC (simulated)"
+          aria-label="Register vendor with Fayda eKYC"
+        >
+          <Dual en="Vendor reg" am="አቅራቢ ምዝገባ" separator="" />
         </button>
 
         <div className="language" aria-label="Language selector">

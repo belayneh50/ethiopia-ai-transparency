@@ -25,6 +25,8 @@ export type RecordItem = {
   reviewStatus?: ReviewStatus;
   reviewNote?: string;
   reviewDate?: string;
+  /** Fayda-verified identity that signed off the review (audit trail). */
+  reviewSignedBy?: { name: string; fin: string };
 };
 
 export type SignalDefinition = {

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Topbar } from "./components/Topbar";
 import { SummaryMetrics } from "./components/SummaryMetrics";
+import { AuditDashboard } from "./components/AuditDashboard";
+import { FaydaVerificationModal } from "./components/FaydaVerificationModal";
+import { VendorRegistrationModal } from "./components/VendorRegistrationModal";
+import { useFayda } from "./FaydaContext";
 import { RecordTable } from "./components/RecordTable";
 import { RecordDetailModal } from "./components/RecordDetailModal";
 import { AddRecordModal } from "./components/AddRecordModal";
@@ -128,6 +132,8 @@ export default function App() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [faydaModalOpen, setFaydaModalOpen] = useState(false);
+  const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [newRecordId, setNewRecordId] = useState<string | null>(null);
   const [geminiGuidance, setGeminiGuidance] = useState<GeminiReviewGuidance | null>(null);
@@ -135,6 +141,7 @@ export default function App() {
 
   const { settings } = useSettings();
   const { isAuthenticated, user, logout, role, can } = useAuth();
+  const { verification } = useFayda();
 
   const showEn = language !== "am";
   const showAm = language !== "en";
@@ -166,11 +173,13 @@ export default function App() {
         else if (addModalOpen) setAddModalOpen(false);
         else if (exportModalOpen) setExportModalOpen(false);
         else if (settingsModalOpen) setSettingsModalOpen(false);
+        else if (faydaModalOpen) setFaydaModalOpen(false);
+        else if (vendorModalOpen) setVendorModalOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected, addModalOpen, exportModalOpen, settingsModalOpen]);
+  }, [selected, addModalOpen, exportModalOpen, settingsModalOpen, faydaModalOpen, vendorModalOpen]);
 
   const visibleRecords = useMemo(() => {
     return records.filter((record) => {
@@ -212,9 +221,19 @@ export default function App() {
       month: "short",
       year: "numeric",
     });
+    // Tie the sign-off to the current Fayda-verified identity (audit trail).
+    // The UI gate prevents unverified saves; this stamps whatever identity the
+    // session holds so the recorded assessment is attributable.
+    const signedBy = verification ? { name: verification.fullName, fin: verification.fin } : undefined;
     const update = (record: RecordItem): RecordItem =>
       record.id === recordId
-        ? { ...record, reviewStatus: nextStatus, reviewNote: nextNote.trim(), reviewDate }
+        ? {
+            ...record,
+            reviewStatus: nextStatus,
+            reviewNote: nextNote.trim(),
+            reviewDate,
+            reviewSignedBy: signedBy,
+          }
         : record;
 
     setRecords((current) => current.map(update));
@@ -385,6 +404,8 @@ export default function App() {
         onLanguageChange={setLanguage}
         onOpenExportModal={() => setExportModalOpen(true)}
         onOpenSettingsModal={() => setSettingsModalOpen(true)}
+        onOpenFaydaModal={() => setFaydaModalOpen(true)}
+        onOpenVendorModal={() => setVendorModalOpen(true)}
       />
 
       <section className="hero" id="top">
@@ -416,6 +437,12 @@ export default function App() {
       </section>
 
       <SummaryMetrics records={records} />
+
+      <AuditDashboard
+        language={language}
+        records={records}
+        onOpenFayda={() => setFaydaModalOpen(true)}
+      />
 
       <RecordTable
         records={records}
@@ -523,6 +550,20 @@ export default function App() {
         />
       )}
 
+      {faydaModalOpen && (
+        <FaydaVerificationModal
+          language={language}
+          onClose={() => setFaydaModalOpen(false)}
+        />
+      )}
+
+      {vendorModalOpen && (
+        <VendorRegistrationModal
+          language={language}
+          onClose={() => setVendorModalOpen(false)}
+        />
+      )}
+
       {selected && (
         <RecordDetailModal
           record={selected}
@@ -536,6 +577,7 @@ export default function App() {
           onAddComparable={handleAddComparable}
           onRemoveComparable={handleRemoveComparable}
           onAskGemini={handleAskGemini}
+          onOpenFayda={() => setFaydaModalOpen(true)}
         />
       )}
     </main>
