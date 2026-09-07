@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Language, RecordItem } from "../types";
-import { requestTransparencyAudit, type TransparencyAuditInput } from "../services/geminiService";
+import { requestTransparencyAudit, createTransparencyAuditFallback, type TransparencyAuditInput } from "../services/geminiService";
 import { maskFin, useFayda } from "../FaydaContext";
 import type { FaydaVerification } from "../faydaStorage";
 import { AuditResultView } from "./AuditResultView";
@@ -92,7 +92,7 @@ export function AuditSignOff({ language, verification, signedOffAt, onOpenFayda,
         <span aria-hidden="true" className="text-[15px] font-bold text-emerald-700">✒</span>
         <span className="font-bold">{text("signedOffBy")}</span>
         <span>
-          {verification.fullName} ({maskFin(verification.fin)}) {text("signedOffOn")} {fmtDate(signedOffAt)}
+          {verification.fullName} ({maskFin(verification.subjectId)}) {text("signedOffOn")} {fmtDate(signedOffAt)}
         </span>
       </div>
     );
@@ -150,6 +150,10 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
       // A verified user signs off automatically at run time; an unverified one
       // sees the gate CTA and can sign off later after verifying.
       setSignedOffAt(verification ? new Date().toISOString() : null);
+    } catch {
+      // 401/403 from the AI endpoint (stale session or role without access):
+      // surface the offline demo result instead of an unhandled rejection.
+      setResult(createTransparencyAuditFallback(toAuditInput(selected, language)));
     } finally {
       setRunning(false);
     }
@@ -211,7 +215,7 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
 
           {verification ? (
             <p className="text-[11px] text-[#2f6f4f]">
-              ✓ {text("signOffIdentity")}: {verification.fullName} ({maskFin(verification.fin)})
+              ✓ {text("signOffIdentity")}: {verification.fullName} ({maskFin(verification.subjectId)})
             </p>
           ) : (
             <p className="flex flex-wrap items-center gap-2 text-[11px] text-[#8a6d1a]">

@@ -91,7 +91,7 @@ export function HumanReviewPanel({ record, language, onSaveReview, onOpenFayda }
           {record.reviewDate && <small>{fieldText(`Last updated: ${record.reviewDate}`, `መጨረሻ የተዘመነው፦ ${record.reviewDate}`)}</small>}
           {record.reviewSignedBy && (
             <small className="review-signed-by">
-              ✒ {fieldText(`Signed by ${record.reviewSignedBy.name} (FIN ${maskFin(record.reviewSignedBy.fin)})`, `የተፈረመው በ ${record.reviewSignedBy.name} (FIN ${maskFin(record.reviewSignedBy.fin)})`)}
+              ✒ {fieldText(`Signed by ${record.reviewSignedBy.name} (sign-off ${maskFin(record.reviewSignedBy.subjectId)})`, `የተፈረመው በ ${record.reviewSignedBy.name} (sign-off ${maskFin(record.reviewSignedBy.subjectId)})`)}
             </small>
           )}
         </div>

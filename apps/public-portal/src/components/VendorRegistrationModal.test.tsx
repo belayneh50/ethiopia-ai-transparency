@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { AuthContext } from "../auth/AuthContext";
 import { FaydaContext } from "../FaydaContext";
 import { VendorRegistrationModal } from "./VendorRegistrationModal";
+import type { AuthContextValue } from "../auth/AuthContext";
 import type { FaydaContextValue } from "../FaydaContext";
+
+const authValue: AuthContextValue = {
+  user: { id: "user-1", email: "admin.demo", name: "Demo Admin", role: "admin" },
+  token: "t",
+  role: "admin",
+  isAuthenticated: true,
+  login: async () => ({ ok: true }),
+  logout: () => undefined,
+  can: () => true,
+};
 
 const faydaValue: FaydaContextValue = {
   verification: null,
@@ -12,9 +24,11 @@ const faydaValue: FaydaContextValue = {
 
 function render(language: "both" | "am" | "en") {
   return renderToStaticMarkup(
-    <FaydaContext.Provider value={faydaValue}>
-      <VendorRegistrationModal language={language} onClose={() => undefined} />
-    </FaydaContext.Provider>,
+    <AuthContext.Provider value={authValue}>
+      <FaydaContext.Provider value={faydaValue}>
+        <VendorRegistrationModal language={language} onClose={() => undefined} />
+      </FaydaContext.Provider>
+    </AuthContext.Provider>,
   );
 }
 

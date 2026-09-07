@@ -53,6 +53,11 @@ export function faydaErrorMessage(code: FaydaAuthFailureCode): { en: string; am:
         en: "The mock NIDP is temporarily unavailable. Try again in a moment.",
         am: "የሙከራ NIDP ለጊዜው አይገኝም። ለአፍታ ቆይተው እንደገና ይሞክሩ።",
       };
+    case "demo_only":
+      return {
+        en: "Sign in and restart the demo verification.",
+        am: "ወደ መግቢያ ገብተው የማሳያ ማረጋገጫውን እንደገና ይጀምሩ።",
+      };
   }
 }
 
@@ -60,6 +65,7 @@ const FAILURE_STYLES: Record<FaydaAuthFailureCode, string> = {
   invalid_fin: "border-amber-200 bg-amber-50 text-amber-800",
   fin_not_found: "border-red-200 bg-red-50 text-red-800",
   nidp_unavailable: "border-slate-200 bg-slate-50 text-slate-700",
+  demo_only: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
 type FaydaOutcomeProps = {

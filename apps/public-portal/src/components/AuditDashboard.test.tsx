@@ -24,10 +24,12 @@ const record: RecordItem = {
 };
 
 const verified = {
-  fin: "123456789012",
+  subjectId: "demo-representative",
+  userId: "user-1",
   fullName: "Sara Alemu",
   address: "Adama, Oromia",
   verifiedAt: "2026-09-05T10:00:00.000Z",
+  expiresAt: "2026-09-05T10:05:00.000Z",
 };
 
 function faydaValue(verification: typeof verified | null): FaydaContextValue {
@@ -45,8 +47,8 @@ function wrap(verification: typeof verified | null, node: ReactNode) {
 }
 
 describe("maskFin", () => {
-  it("masks all but the last four digits", () => {
-    expect(maskFin("123456789012")).toBe("···9012");
+  it("never exposes a national ID — it shows the non-sensitive demo reference", () => {
+    expect(maskFin("demo-representative")).toBe("DEMO");
   });
 });
 
@@ -69,7 +71,7 @@ describe("AuditDashboard", () => {
     const html = wrap(verified, <AuditDashboard language="en" records={[record]} onOpenFayda={() => undefined} />);
     expect(html).toContain("Sign-off identity");
     expect(html).toContain("Sara Alemu");
-    expect(html).toContain("···9012");
+    expect(html).toContain("DEMO");
     expect(html).not.toContain("Sign-off gated");
   });
 
@@ -98,7 +100,7 @@ describe("AuditSignOff", () => {
     );
     expect(html).toContain("Signed off by");
     expect(html).toContain("Sara Alemu");
-    expect(html).toContain("···9012");
+    expect(html).toContain("DEMO");
     expect(html).toContain("Sep");
     expect(html).toContain("2026");
   });

@@ -8,7 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@ethiopia-ai/shared-types';
 
 class LoginDto {
+  @IsString()
+  @IsNotEmpty()
   email!: string;
+
+  @IsString()
+  @IsNotEmpty()
   password!: string;
 }
 
@@ -43,6 +48,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async login(@Body() dto: LoginDto) {
     return this.authService.login(await this.authService.validateUser(dto.email, dto.password));
   }

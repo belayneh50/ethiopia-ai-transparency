@@ -4,15 +4,18 @@ import { FaydaContext } from "../FaydaContext";
 import { HumanReviewPanel } from "./HumanReviewPanel";
 import type { FaydaContextValue } from "../FaydaContext";
 import type { RecordItem } from "../types";
+import type { FaydaVerification } from "../faydaStorage";
 
-const verified = {
-  fin: "123456789012",
+const verified: FaydaVerification = {
+  subjectId: "demo-representative",
+  userId: "user-1",
   fullName: "Sara Alemu",
   address: "Adama, Oromia",
   verifiedAt: "2026-09-05T10:00:00.000Z",
+  expiresAt: "2026-09-05T10:05:00.000Z",
 };
 
-function faydaValue(verification: typeof verified | null): FaydaContextValue {
+function faydaValue(verification: FaydaVerification | null): FaydaContextValue {
   return {
     verification,
     verify: async () => ({ ok: false, code: "fin_not_found" as const, message: "" }),
@@ -40,7 +43,7 @@ const baseRecord: RecordItem = {
   reviewDate: "05 Sep 2026",
 };
 
-function render(verification: typeof verified | null, record: RecordItem = baseRecord) {
+function render(verification: FaydaVerification | null, record: RecordItem = baseRecord) {
   return renderToStaticMarkup(
     <FaydaContext.Provider value={faydaValue(verification)}>
       <HumanReviewPanel
@@ -69,13 +72,14 @@ describe("HumanReviewPanel — Fayda sign-off gate", () => {
     expect(html).toContain("Save local review");
   });
 
-  it("shows the recorded assessment with the Fayda-signed identity", () => {
+  it("shows the recorded assessment with the sign-off identity, never a national ID", () => {
     const record: RecordItem = {
       ...baseRecord,
-      reviewSignedBy: { name: "Sara Alemu", fin: "123456789012" },
+      reviewSignedBy: { name: "Sara Alemu", subjectId: "demo-representative" },
     };
     const html = render(null, record);
     expect(html).toContain("RECORDED ASSESSMENT");
-    expect(html).toContain("Signed by Sara Alemu (FIN ···9012)");
+    expect(html).toContain("Signed by Sara Alemu (sign-off DEMO)");
+    expect(html).not.toContain("123456789012");
   });
 });

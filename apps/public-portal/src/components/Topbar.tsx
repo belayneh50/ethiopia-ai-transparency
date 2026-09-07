@@ -64,7 +64,7 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
           onClick={onOpenFaydaModal}
           title={
             verification
-              ? `Fayda eKYC verified as ${verification.fullName} (FIN ${maskFin(verification.fin)})`
+              ? `Fayda eKYC verified as ${verification.fullName} (FIN ${maskFin(verification.subjectId)})`
               : "Open the simulated Fayda eKYC verification demo"
           }
           aria-label="Fayda eKYC status — click to verify or view"

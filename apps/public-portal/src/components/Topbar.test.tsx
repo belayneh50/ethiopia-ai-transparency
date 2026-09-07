@@ -17,10 +17,12 @@ const authValue: AuthContextValue = {
 };
 
 const verified = {
-  fin: "123456789012",
+  subjectId: "demo-representative",
+  userId: "user-1",
   fullName: "Sara Alemu",
   address: "Adama, Oromia",
   verifiedAt: "2026-09-05T10:00:00.000Z",
+  expiresAt: "2026-09-05T10:05:00.000Z",
 };
 
 function faydaValue(verification: typeof verified | null): FaydaContextValue {
