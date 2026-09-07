@@ -1,89 +1,51 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useAuth } from './auth/AuthContext';
 import { mockFaydaAuthentication, type FaydaAuthenticationResult } from './services/faydaService';
-import {
-  clearFaydaVerification,
-  FAYDA_VERIFICATION_KEY,
-  readFaydaVerification,
-  saveFaydaVerification,
-  type FaydaVerification,
-} from './faydaStorage';
-
-// Fayda eKYC session state — the single owner of "who is verified" for the
-// whole portal. Verification lives in sessionStorage (same-tab reload keeps
-// it; a new window / fresh session starts unverified, matching the auth
-// semantics), and every consumer (topbar chip, audit sign-off, review gate,
-// vendor registration) reads from this one context.
-
+import { clearFaydaVerification, createFaydaVerification, isCurrentVerification, readFaydaVerification, saveFaydaVerification, type FaydaVerification } from './faydaStorage';
 export type FaydaContextValue = {
   verification: FaydaVerification | null;
   verify: (fin: string) => Promise<FaydaAuthenticationResult>;
   clearVerification: () => void;
 };
-
 export const FaydaContext = createContext<FaydaContextValue | null>(null);
-
 export function FaydaProvider({ children }: { children: ReactNode }) {
-  const [verification, setVerification] = useState<FaydaVerification | null>(() =>
-    readFaydaVerification(window.sessionStorage),
-  );
-
-  // Cross-window sync: if another tab logs out / clears verification, drop the
-  // in-memory state here too (mirrors the AuthContext storage listener).
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === FAYDA_VERIFICATION_KEY) {
-        setVerification(readFaydaVerification(window.sessionStorage));
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+  const { user, token } = useAuth();
+  const [stored, setStored] = useState(() => readFaydaVerification(window.sessionStorage));
+  const generation = useRef(0);
+  const currentToken = useRef(token);
+  currentToken.current = token;
+  const verification = isCurrentVerification(stored) && stored.userId === user?.id ? stored : null;
+  const clearVerification = useCallback(() => {
+    generation.current++;
+    clearFaydaVerification(window.sessionStorage);
+    setStored(null);
   }, []);
-
+  useEffect(() => {
+    if (!stored) return;
+    if (!verification) { clearVerification(); return; }
+    const timer = window.setTimeout(clearVerification, Math.max(0, Date.parse(verification.expiresAt) - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [stored, verification, clearVerification]);
   const verify = useCallback(async (fin: string): Promise<FaydaAuthenticationResult> => {
+    clearVerification();
+    const request = generation.current;
     const result = await mockFaydaAuthentication(fin);
+    if (request !== generation.current || currentToken.current !== token || !user || !token) {
+      return { ok: false, code: 'demo_only', message: 'Sign in and restart the demo verification.' };
+    }
     if (result.ok) {
-      const next: FaydaVerification = {
-        fin,
-        fullName: result.minimalData.fullName,
-        address: result.minimalData.address,
-        verifiedAt: new Date().toISOString(),
-      };
+      const next = createFaydaVerification(user.id, result.minimalData);
       saveFaydaVerification(window.sessionStorage, next);
-      setVerification(next);
+      setStored(next);
     }
     return result;
-  }, []);
-
-  const clearVerification = useCallback(() => {
-    clearFaydaVerification(window.sessionStorage);
-    setVerification(null);
-  }, []);
-
-  const value = useMemo<FaydaContextValue>(
-    () => ({ verification, verify, clearVerification }),
-    [verification, verify, clearVerification],
-  );
-
-  return <FaydaContext.Provider value={value}>{children}</FaydaContext.Provider>;
+  }, [clearVerification, user, token]);
+  return <FaydaContext.Provider value={{ verification, verify, clearVerification }}>{children}</FaydaContext.Provider>;
 }
-
 export function useFayda(): FaydaContextValue {
-  const ctx = useContext(FaydaContext);
-  if (!ctx) {
-    throw new Error('useFayda must be used inside <FaydaProvider>');
-  }
-  return ctx;
+  const value = useContext(FaydaContext);
+  if (!value) throw new Error('useFayda must be used inside <FaydaProvider>');
+  return value;
 }
-
-/** "···9012" style masking for display. */
-export function maskFin(fin: string): string {
-  return `···${fin.slice(-4)}`;
-}
+/** Display a non-sensitive demo reference, never a national ID. */
+export function maskFin(_subjectId: string): string { return 'DEMO'; }

@@ -18,7 +18,8 @@
     "jsxImportSource": "react",
     "paths": {
       "@/*": ["./src/*"],
-      "@ethiopia-ai/shared-types": ["../../packages/shared-types"]
+      "@ethiopia-ai/shared-types": ["../../packages/shared-types/index.ts"],
+      "@ethiopia-ai/shared-types/*": ["../../packages/shared-types/*.ts"]
     }
   },
   "include": ["src"],

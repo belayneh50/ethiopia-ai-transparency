@@ -2,7 +2,7 @@
   "name": "@ethiopia-ai/shared-types",
   "version": "1.0.0",
   "private": true,
-  "main": "./index.ts",
+  "main": "./dist/index.js",
   "types": "./index.ts",
   "dependencies": {
     "typescript": "^5.3.3"
@@ -10,5 +10,30 @@
   "devDependencies": {
     "@types/react": "^18.2.48",
     "@types/node": "^20.11.28"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./dist/index.js"
+    },
+    "./transparency": {
+      "types": "./transparency.ts",
+      "default": "./dist/transparency.js"
+    },
+    "./guidance": {
+      "types": "./guidance.ts",
+      "default": "./dist/guidance.js"
+    },
+    "./guidance-adapter": {
+      "types": "./guidance-adapter.ts",
+      "default": "./dist/guidance-adapter.js"
+    },
+    "./gemini-model": {
+      "types": "./gemini-model.ts",
+      "default": "./dist/gemini-model.js"
+    }
   }
 }

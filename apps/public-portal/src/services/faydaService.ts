@@ -22,7 +22,7 @@ const FIN_STRUCTURE = /^\d{12}$/;
 //   * structurally invalid        -> invalid_fin
 //   * exactly "000000000000"      -> nidp_unavailable (reserved outage demo)
 //   * starts with "99"            -> fin_not_found (not registered in mock NIDP)
-//   * anything else 12 digits     -> authentication success
+//   * the supplied demo FIN only  -> simulated success; other values rejected
 // ---------------------------------------------------------------------------
 
 /** A FIN that authenticates successfully in the mock (for the demo UI). */
@@ -35,7 +35,7 @@ export type FaydaMinimalData = {
   biometricVerified: boolean;
 };
 
-export type FaydaAuthFailureCode = "invalid_fin" | "fin_not_found" | "nidp_unavailable";
+export type FaydaAuthFailureCode = "invalid_fin" | "fin_not_found" | "nidp_unavailable" | "demo_only";
 
 export type FaydaAuthenticationSuccess = {
   ok: true;
@@ -122,6 +122,7 @@ function issueMockIdToken(fin: string, issuedAtSeconds: number): string {
  * id_token plus minimal data, or a typed failure (never a thrown exception).
  */
 export async function mockFaydaAuthentication(fin: string): Promise<FaydaAuthenticationResult> {
+  fin = fin.trim();
   await new Promise((resolve) => setTimeout(resolve, FAYDA_MOCK_LATENCY_MS));
 
   if (!isValidFaydaFin(fin)) {
@@ -133,6 +134,8 @@ export async function mockFaydaAuthentication(fin: string): Promise<FaydaAuthent
   if (fin.startsWith("99")) {
     return { ok: false, code: "fin_not_found", message: "No registered identity matches this FIN in the mock NIDP." };
   }
+
+  if (fin !== FAYDA_DEMO_VERIFIED_FIN) return { ok: false, code: "demo_only", message: "Use the supplied synthetic demo identifier only." };
 
   return {
     ok: true,

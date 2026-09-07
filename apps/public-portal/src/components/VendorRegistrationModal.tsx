@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { Language } from "../types";
 import { useFayda, maskFin } from "../FaydaContext";
+import { useAuth } from "../auth/AuthContext";
 import {
+  createFaydaVerification,
   readVendors,
   saveVendors,
   type FaydaVerification,
@@ -78,6 +80,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
   );
   const [registered, setRegistered] = useState<VendorRegistration | null>(null);
   const { verify } = useFayda();
+  const { user } = useAuth();
   const { showEn, showAm, text } = useText(language);
 
   const handleVerify = async () => {
@@ -86,12 +89,9 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
     try {
       const result = await verify(fin);
       if (result.ok) {
-        setIdentity({
-          fin,
-          fullName: result.minimalData.fullName,
-          address: result.minimalData.address,
-          verifiedAt: new Date().toISOString(),
-        });
+        // Use the storage layer's producer so the identity is shaped and
+        // time-boxed exactly like the shared verification record.
+        setIdentity(createFaydaVerification(user?.id ?? "", result.minimalData));
       }
     } finally {
       setVerifying(false);
@@ -104,7 +104,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
       id: `VND-${Date.now()}`,
       company: company.trim(),
       contactName: identity.fullName,
-      contactFin: identity.fin,
+      contactSubjectId: identity.subjectId,
       verifiedAt: identity.verifiedAt,
       registeredAt: new Date().toISOString(),
     };
@@ -164,7 +164,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
               ✓ {text("verifiedAs")}: {identity.fullName}
             </p>
             <p className="mt-1 text-[12px] text-emerald-900">
-              {identity.address} · FIN {maskFin(identity.fin)}
+              {identity.address} · FIN {maskFin(identity.subjectId)}
             </p>
             <p className="mt-1 text-[11px] italic text-emerald-800">{text("identityLocked")}</p>
           </div>
@@ -213,7 +213,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
         </label>
         {identity && (
           <p className="mt-2 text-[11px] text-[#5e6d68]">
-            {text("representative")}: <b className="text-[#173f35]">{identity.fullName}</b> ({maskFin(identity.fin)})
+            {text("representative")}: <b className="text-[#173f35]">{identity.fullName}</b> ({maskFin(identity.subjectId)})
           </p>
         )}
         <button
@@ -232,7 +232,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
               ✓ {text("registered")}: {registered.company}
             </p>
             <p className="mt-1 text-[12px] text-emerald-900">
-              {registered.contactName} · FIN {maskFin(registered.contactFin)} · {fmtDate(registered.registeredAt)}
+              {registered.contactName} · FIN {maskFin(registered.contactSubjectId)} · {fmtDate(registered.registeredAt)}
             </p>
             <p className="mt-1 text-[11px] italic text-emerald-800">{text("registeredHint")}</p>
             {registered.bidSubmittedAt ? (
@@ -259,7 +259,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
           <ul className="mt-1 space-y-1 text-[12px] text-[#173f35]">
             {vendors.map((v) => (
               <li key={v.id} className="rounded-md border border-[#e0e3dd] px-3 py-2">
-                <b>{v.company}</b> — {v.contactName} (FIN {maskFin(v.contactFin)}){" "}
+                <b>{v.company}</b> — {v.contactName} (sign-off {maskFin(v.contactSubjectId)}){" "}
                 {v.bidSubmittedAt ? `· ${text("bidSubmitted")}` : ""}
               </li>
             ))}
