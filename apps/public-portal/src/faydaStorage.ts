@@ -9,11 +9,38 @@
 //    (they are demo records, like the records/comparables keys);
 //  - nothing else in storage is ever read, written, or removed.
 
+import { FAYDA_TOKEN_TTL_SECONDS } from './services/faydaService';
+
 export const FAYDA_VERIFICATION_KEY = 'ethiopia_ai_fayda_verification_v1';
 export const VENDOR_KEY = 'ethiopia_ai_vendors_v1';
 
+/** Single owner of the verification lifetime — producer and validator share it. */
+export const FAYDA_VERIFICATION_TTL_MS = FAYDA_TOKEN_TTL_SECONDS * 1_000;
+
+/**
+ * Build a verification whose lifetime is correct by construction: the same
+ * constant feeds the validator below, so a fresh verification is always
+ * current (the historical bug was an off-by-δ mismatch between the two).
+ */
+export function createFaydaVerification(
+  userId: string,
+  minimalData: { fullName: string; address: string },
+): FaydaVerification {
+  const verifiedAtMs = Date.now();
+  return {
+    subjectId: 'demo-representative',
+    userId,
+    fullName: minimalData.fullName,
+    address: minimalData.address,
+    verifiedAt: new Date(verifiedAtMs).toISOString(),
+    expiresAt: new Date(verifiedAtMs + FAYDA_VERIFICATION_TTL_MS).toISOString(),
+  };
+}
+
 export type FaydaVerification = {
-  fin: string;
+  subjectId: string;
+  userId: string;
+  expiresAt: string;
   fullName: string;
   address: string;
   verifiedAt: string;
@@ -23,7 +50,7 @@ export type VendorRegistration = {
   id: string;
   company: string;
   contactName: string;
-  contactFin: string;
+  contactSubjectId: string;
   verifiedAt: string;
   registeredAt: string;
   bidSubmittedAt?: string;
@@ -63,9 +90,22 @@ function safeWrite(storage: SimpleStorage, key: string, value: unknown): void {
   }
 }
 
+export function isCurrentVerification(value: unknown, now = Date.now()): value is FaydaVerification {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Partial<FaydaVerification>;
+  return v.subjectId === 'demo-representative' && typeof v.userId === 'string' && !!v.userId
+    && typeof v.fullName === 'string' && typeof v.address === 'string'
+    && typeof v.verifiedAt === 'string' && Number.isFinite(Date.parse(v.verifiedAt))
+    && typeof v.expiresAt === 'string' && Date.parse(v.expiresAt) > now
+    && Date.parse(v.expiresAt) - Date.parse(v.verifiedAt) <= FAYDA_VERIFICATION_TTL_MS;
+}
+
 /** Read the current session's verified identity (null when unverified). */
 export function readFaydaVerification(session: SimpleStorage): FaydaVerification | null {
-  return safeRead<FaydaVerification>(session, FAYDA_VERIFICATION_KEY);
+  const value = safeRead<unknown>(session, FAYDA_VERIFICATION_KEY);
+  if (isCurrentVerification(value)) return value;
+  safeRemove(session, FAYDA_VERIFICATION_KEY);
+  return null;
 }
 
 /** Persist a successful Fayda verification into sessionStorage only. */
@@ -81,7 +121,10 @@ export function clearFaydaVerification(session: SimpleStorage): void {
 /** Read the Fayda-gated vendor registrations (localStorage demo data). */
 export function readVendors(local: SimpleStorage): VendorRegistration[] {
   const vendors = safeRead<VendorRegistration[]>(local, VENDOR_KEY);
-  return Array.isArray(vendors) ? vendors : [];
+  // Drop legacy identity-bearing registrations instead of retaining raw FINs.
+  const clean = Array.isArray(vendors) ? vendors.filter(v => v && v.contactSubjectId === 'demo-representative' && !('contactFin' in v)) : [];
+  if (Array.isArray(vendors) && clean.length !== vendors.length) safeWrite(local, VENDOR_KEY, clean);
+  return clean;
 }
 
 /** Persist the vendor registrations list. */

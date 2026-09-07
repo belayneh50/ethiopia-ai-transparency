@@ -38,6 +38,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 // sessionStorage ONLY, legacy localStorage auth keys are purged on every read,
 // and nothing else in localStorage is ever touched.
 import { clearAuthSession, readStoredAuth, saveAuthSession, TOKEN_KEY } from './authStorage';
+import { clearFaydaVerification } from '../faydaStorage';
 
 function readStored(): { user: AuthUser | null; token: string | null } {
   const { userRaw, token } = readStoredAuth(window.sessionStorage, window.localStorage);
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: res.status === 401 ? 'Invalid credentials' : 'Login failed' };
       }
       const data = (await res.json()) as { accessToken: string; user: AuthUser };
+      clearFaydaVerification(window.sessionStorage);
       saveAuthSession(window.sessionStorage, JSON.stringify(data.user), data.accessToken);
       setStored({ user: data.user, token: data.accessToken });
       return { ok: true };
@@ -83,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    clearFaydaVerification(window.sessionStorage);
     clearAuthSession(window.sessionStorage, window.localStorage);
     setStored({ user: null, token: null });
   }, []);

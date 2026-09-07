@@ -224,7 +224,7 @@ export default function App() {
     // Tie the sign-off to the current Fayda-verified identity (audit trail).
     // The UI gate prevents unverified saves; this stamps whatever identity the
     // session holds so the recorded assessment is attributable.
-    const signedBy = verification ? { name: verification.fullName, fin: verification.fin } : undefined;
+    const signedBy = verification ? { name: verification.fullName, subjectId: verification.subjectId } : undefined;
     const update = (record: RecordItem): RecordItem =>
       record.id === recordId
         ? {
