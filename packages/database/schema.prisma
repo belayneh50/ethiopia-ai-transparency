@@ -17,6 +17,12 @@ model Record {
   buyer             String
   supplier          String
   value             Int
+  quantity          Float?
+  unit              String?
+  approvalDate      String?   @map("approval_date")
+  paymentDate       String?   @map("payment_date")
+  createdBy         String?   @map("created_by")
+  version           Int       @default(1)
   date              String
   status            String
   statusAm          String    @map("status_am")

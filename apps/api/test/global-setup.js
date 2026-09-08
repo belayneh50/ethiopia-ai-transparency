@@ -45,5 +45,17 @@ function runPrisma(args) {
 module.exports = async () => {
   await createTestDatabase();
   runPrisma(['db', 'push', '--schema', 'schema.prisma', '--skip-generate']);
-  runPrisma(['db', 'seed']);
+  // Populate only the dedicated test database without tsx's OS-user lookup,
+  // which is unavailable in some Windows sandboxes. Never seed the dev DB.
+  const url = testUrl();
+  if (new URL(url).pathname !== `/${TEST_DB_NAME}`) throw new Error('Unexpected test database');
+  const client = new PrismaClient({ datasources: { db: { url } } });
+  const bcrypt = require('bcrypt');
+  const { DEMO_ACCOUNTS } = require('../../../packages/shared-types/dist/index.js');
+  try {
+    for (const account of DEMO_ACCOUNTS) {
+      const data = { email: account.username, name: account.name, role: account.role, isActive: true, passwordHash: await bcrypt.hash(account.password, 10) };
+      await client.user.upsert({ where: { email: account.username }, create: data, update: data });
+    }
+  } finally { await client.$disconnect(); }
 };

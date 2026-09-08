@@ -16,6 +16,8 @@ const alias = {
   '@ethiopia-ai/shared-types': path.join(sharedTypes, 'index.ts'),
 };
 export default defineConfig({
+  // Existing legacy VITE_GEMINI_API_KEY values remain untouched and are not client configuration.
+  envPrefix: 'PUBLIC_',
   plugins: [react()],
   resolve: { alias },
   server: { port: 5173, proxy }, preview: { proxy },

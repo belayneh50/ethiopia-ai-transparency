@@ -2,14 +2,7 @@ import { useEffect, useState } from "react";
 import type { Language } from "../types";
 import { FAYDA_DEMO_VERIFIED_FIN, type FaydaAuthFailureCode, type FaydaAuthenticationResult } from "../services/faydaService";
 import { useFayda } from "../FaydaContext";
-
-// ---------------------------------------------------------------------------
-// Fayda eKYC verification modal — master plan Step 3.
-// Takes a 12-digit FIN, runs the Step 2 mock OIDC flow, and clearly shows the
-// outcome: Verified with the minimal data returned (full name, address,
-// biometric status), or the specific typed rejection. Everything is labeled
-// as a mock — no real NIDP credential or identity is involved.
-// ---------------------------------------------------------------------------
+import { ModalShell } from "./ModalShell";
 
 const COPY: Record<string, { en: string; am: string }> = {
   title: { en: "Fayda eKYC verification", am: "የፋይዳ eKYC ማረጋገጫ" },
@@ -35,29 +28,12 @@ const COPY: Record<string, { en: string; am: string }> = {
   failedTitle: { en: "Verification failed", am: "ማረጋገጫ አልተሳካም" },
 };
 
-/** Bilingual, code-specific failure guidance (pure, for reuse + tests). */
 export function faydaErrorMessage(code: FaydaAuthFailureCode): { en: string; am: string } {
   switch (code) {
-    case "invalid_fin":
-      return {
-        en: "A Fayda Identification Number must be exactly 12 digits.",
-        am: "የፋይዳ መታወቂያ ቁጥር በትክክል 12 አሃዞች መሆን አለበት።",
-      };
-    case "fin_not_found":
-      return {
-        en: "No registered identity matches this FIN in the mock NIDP.",
-        am: "ይህ FIN በሙከራ NIDP ውስጥ ከተመዘገበ ማንነት ጋር አልተጣመረም።",
-      };
-    case "nidp_unavailable":
-      return {
-        en: "The mock NIDP is temporarily unavailable. Try again in a moment.",
-        am: "የሙከራ NIDP ለጊዜው አይገኝም። ለአፍታ ቆይተው እንደገና ይሞክሩ።",
-      };
-    case "demo_only":
-      return {
-        en: "Sign in and restart the demo verification.",
-        am: "ወደ መግቢያ ገብተው የማሳያ ማረጋገጫውን እንደገና ይጀምሩ።",
-      };
+    case "invalid_fin": return { en: "A Fayda Identification Number must be exactly 12 digits.", am: "የፋይዳ መታወቂያ ቁጥር በትክክል 12 አሃዞች መሆን አለበት።" };
+    case "fin_not_found": return { en: "No registered identity matches this FIN in the mock NIDP.", am: "ይህ FIN በሙከራ NIDP ውስጥ ከተመዘገበ ማንነት ጋር አልተጣመረም።" };
+    case "nidp_unavailable": return { en: "The mock NIDP is temporarily unavailable. Try again in a moment.", am: "የሙከራ NIDP ለጊዜው አይገኝም። ለአፍታ ቆይተው እንደገና ይሞክሩ።" };
+    case "demo_only": return { en: "Sign in and restart the demo verification.", am: "ወደ መግቢያ ገብተው የማሳያ ማረጋገጫውን እንደገና ይጀምሩ።" };
   }
 }
 
@@ -68,169 +44,110 @@ const FAILURE_STYLES: Record<FaydaAuthFailureCode, string> = {
   demo_only: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
-type FaydaOutcomeProps = {
-  language: Language;
-  result: FaydaAuthenticationResult;
-};
-
-/** Presentational outcome: Verified minimal data or the typed rejection. */
-export function FaydaOutcome({ language, result }: FaydaOutcomeProps) {
-  const showEn = language !== "am";
-  const showAm = language !== "en";
-  const text = (key: string) => {
-    const copy = COPY[key];
-    if (language === "am") return copy.am;
-    if (language === "en") return copy.en;
-    return `${copy.en} · ${copy.am}`;
-  };
-
+type OutcomeProps = { language: Language; result: FaydaAuthenticationResult };
+export function FaydaOutcome({ language, result }: OutcomeProps) {
+  const showEn = language !== "am"; const showAm = language !== "en";
+  const text = (k: string) => { const c = COPY[k as keyof typeof COPY] as { en: string; am: string } | undefined; return c ? (language === "am" ? c.am : language === "en" ? c.en : `${c.en} · ${c.am}`) : k; };
   if (!result.ok) {
-    const message = faydaErrorMessage(result.code);
+    const msg = faydaErrorMessage(result.code);
     return (
-      <div role="status" className={`mt-4 rounded-lg border px-4 py-3 text-[13px] ${FAILURE_STYLES[result.code]}`}>
-        <p className="font-bold">
-          {showEn && COPY.failedTitle.en}
-          {showEn && showAm && " · "}
-          {showAm && COPY.failedTitle.am}
-        </p>
-        <p className="mt-1">
-          {showEn && message.en}
-          {showEn && showAm && <br />}
-          {showAm && message.am}
-        </p>
+      <div role="status" className={`mt-4 rounded-lg border px-4 py-3 text-[13px] leading-relaxed ${FAILURE_STYLES[result.code]}`}>
+        <p className="font-bold">{showEn && (COPY.failedTitle as { en: string; am: string }).en}{showEn && showAm && " · "}{showAm && (COPY.failedTitle as { en: string; am: string }).am}</p>
+        <p className="mt-1">{showEn && msg.en}{showEn && showAm && <br />}{showAm && msg.am}</p>
       </div>
     );
   }
-
   return (
-    <div role="status" className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-      <p className="flex items-center gap-2 text-[13px] font-bold text-emerald-800">
-        <span aria-hidden="true">✓</span>
-        {text("successTitle")}
+    <div role="status" className="mt-5 rounded-xl border-2 border-emerald-200 bg-emerald-50/40 px-5 py-4 shadow-inner">
+      <p className="flex items-center gap-2 text-[15px] font-extrabold text-emerald-800 tracking-tight">
+        <span aria-hidden="true" className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-bold">✓</span>
+        <span>{text("successTitle")}</span>
       </p>
-      <dl className="mt-2 space-y-1 text-[13px] text-emerald-900">
-        <div className="flex gap-2">
-          <dt className="font-bold">{text("fullName")}:</dt>
-          <dd>{result.minimalData.fullName}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="font-bold">{text("address")}:</dt>
-          <dd>{result.minimalData.address}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="font-bold">{text("biometric")}:</dt>
-          <dd>{text("biometricOk")} ✓</dd>
-        </div>
+      <dl className="mt-3 space-y-1.5 text-[13px] text-[#2a5244]">
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("fullName")}:</dt><dd className="text-[#2c5245]">{result.minimalData.fullName}</dd></div>
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("address")}:</dt><dd className="text-[#2c5245]">{result.minimalData.address}</dd></div>
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("biometric")}:</dt><dd className="text-[#2c5245]">{text("biometricOk")} ✓</dd></div>
       </dl>
     </div>
   );
 }
 
-type FaydaVerificationModalProps = {
-  language: Language;
-  onClose: () => void;
-};
-
-export function FaydaVerificationModal({ language, onClose }: FaydaVerificationModalProps) {
+type Props = { language: Language; onClose: () => void };
+export function FaydaVerificationModal({ language, onClose }: Props) {
   const [fin, setFin] = useState("");
   const [result, setResult] = useState<FaydaAuthenticationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const { verify } = useFayda();
 
-  const showEn = language !== "am";
-  const showAm = language !== "en";
-  const text = (key: string) => {
-    const copy = COPY[key];
-    if (language === "am") return copy.am;
-    if (language === "en") return copy.en;
-    return `${copy.en} · ${copy.am}`;
-  };
+  const showEn = language !== "am"; const showAm = language !== "en";
+  const text = (k: string) => { const c = COPY[k as keyof typeof COPY] as { en: string; am: string } | undefined; return c ? (language === "am" ? c.am : language === "en" ? c.en : `${c.en} · ${c.am}`) : k; };
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   const handleVerify = async () => {
     if (loading) return;
-    setLoading(true);
-    setResult(null);
+    setLoading(true); setResult(null);
     try {
-      setResult(await verify(fin));
-    } finally {
-      setLoading(false);
-    }
+      const r = await verify(fin);
+      setResult(r);
+      if (r.ok) { setTimeout(() => onClose(), 1800); }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={text("title")}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[18px] font-bold text-[#173f35]">
-              {showEn && COPY.title.en}
-              {showEn && showAm && <span className="text-[#6d527f]"> · </span>}
-              {showAm && COPY.title.am}
-            </h2>
-            <p className="mt-1 text-[11px] text-[#5e6d68]">
-              {showEn && COPY.subtitle.en}
-              {showEn && showAm && <br />}
-              {showAm && COPY.subtitle.am}
-            </p>
-          </div>
-          <button type="button" onClick={onClose} aria-label={text("close")} className="rounded-md border border-[#d2d8d0] px-2 py-1 text-[13px] text-[#5e6d68]">
-            ✕
-          </button>
-        </div>
+    <ModalShell open={true} onClose={onClose} titleEn={COPY.title.en} titleAm={COPY.title.am} ariaLabel={text("title")}>
+      {/* Subtitle more readable */}
+      <p className="text-[13px] text-[#2c5245] font-medium leading-relaxed mt-1">
+        {showEn && COPY.subtitle.en}{showEn && showAm && <br />}{showAm && COPY.subtitle.am}
+      </p>
 
-        <label className="mt-5 block text-[10px] font-bold uppercase tracking-[0.08em] text-[#5e6d68]">
-          {text("fin")}
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={12}
-            value={fin}
-            onChange={(event) => {
-              setFin(event.target.value.replace(/\D/g, "").slice(0, 12));
-              setResult(null);
-            }}
-            placeholder={COPY.placeholder.en}
-            className="mt-1 w-full rounded-md border border-[#c9d3cd] bg-white px-3 py-2 text-[14px] font-normal normal-case tracking-normal text-[#173f35]"
-          />
-        </label>
+      {/* Label above input (English first, Amharic slightly smaller beneath) */}
+      <label className="mt-5 block">
+        <span className="block text-[11px] font-extrabold uppercase tracking-[0.1em] text-[#173f35]">{text("fin")}</span>
+        <span className="block text-[10px] text-[#6b7a58] font-medium mb-1">{showAm ? COPY.subtitle.am : "12-digit synthetic demonstration number"}</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={12}
+          value={fin}
+          onChange={(e) => { setFin(e.target.value.replace(/\D/g, "").slice(0, 12)); setResult(null); }}
+          placeholder={COPY.placeholder.en}
+          className="w-full rounded-lg border-2 border-[#d6cfa5] bg-[#fffdf8] px-4 py-3 text-[15px] text-[#173f35] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#e9c867] focus:border-[#c9a74d] transition"
+        />
+      </label>
 
+      {/* Primary action: green; secondary: quiet */}
+      <div className="mt-5 flex gap-3">
         <button
           type="button"
           onClick={handleVerify}
-          disabled={loading || fin.length === 0}
-          className="mt-4 w-full rounded-md bg-[#173f35] px-4 py-2 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={loading || fin.length < 1}
+          className="flex-1 rounded-lg bg-[#173f35] px-5 py-2.5 text-[13px] font-extrabold text-white shadow-md hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           {loading ? text("verifying") : text("verify")}
         </button>
-
-        <p className="mt-3 text-[10px] text-[#5e6d68]">
-          {text("tryThese")}
-          <span className="block">
-            {FAYDA_DEMO_VERIFIED_FIN} ({text("verified")}) · 991234567890 ({text("notRegistered")}) · 000000000000 ({text("outage")})
-          </span>
-        </p>
-
-        {result && <FaydaOutcome language={language} result={result} />}
-
-        <p className="mt-4 border-t border-[#e0e3dd] pt-3 text-[10px] italic text-[#5e6d68]">{text("honest")}</p>
       </div>
-    </div>
+
+      {/* Demo hints */}
+      <p className="mt-3 text-[12px] text-[#556b4a] font-medium">
+        {text("tryThese")} <span className="block text-[11px] text-[#3a5c3a]">{FAYDA_DEMO_VERIFIED_FIN} ({text("verified")}) · 991234567890 ({text("notRegistered")}) · 000000000000 ({text("outage")})</span>
+      </p>
+
+      {/* Result / error shown clearly */}
+      {result && <FaydaOutcome language={language} result={result} />}
+
+      {/* Disclaimer - larger and readable */}
+      <p className="mt-4 border-t border-[#d6cfa5] pt-3 text-[12px] text-[#556b4a] font-medium leading-relaxed">{text("honest")}</p>
+
+      {(() => {
+        // Footer actions passed as footer prop so ModalShell aligns consistently
+        return null;
+      })()}
+    </ModalShell>
   );
 }

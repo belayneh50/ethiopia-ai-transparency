@@ -8,6 +8,8 @@ module.exports = {
     "./src/components/AuditDashboard.tsx",
     "./src/components/AuditResultView.tsx",
     "./src/components/FaydaVerificationModal.tsx",
+    "./src/components/ModalShell.tsx",
+    "./src/components/ThresholdSettingsModal.tsx",
     "./src/components/VendorRegistrationModal.tsx",
   ],
   corePlugins: {

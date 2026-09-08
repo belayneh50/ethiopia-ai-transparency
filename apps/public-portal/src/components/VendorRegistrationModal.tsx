@@ -1,3 +1,4 @@
+import { isCurrentVerification } from '../faydaStorage';
 import { useState } from "react";
 import type { Language } from "../types";
 import { useFayda, maskFin } from "../FaydaContext";
@@ -72,14 +73,15 @@ function useText(language: Language) {
 
 export function VendorRegistrationModal({ language, onClose }: VendorRegistrationModalProps) {
   const [fin, setFin] = useState("");
-  const [identity, setIdentity] = useState<FaydaVerification | null>(null);
+
   const [verifying, setVerifying] = useState(false);
   const [company, setCompany] = useState("");
   const [vendors, setVendors] = useState<VendorRegistration[]>(() =>
     typeof window === "undefined" ? [] : readVendors(window.localStorage),
   );
   const [registered, setRegistered] = useState<VendorRegistration | null>(null);
-  const { verify } = useFayda();
+  const { verify, verification: identity } = useFayda();
+  const [verificationError, setVerificationError] = useState(false);
   const { user } = useAuth();
   const { showEn, showAm, text } = useText(language);
 
@@ -88,18 +90,14 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
     setVerifying(true);
     try {
       const result = await verify(fin);
-      if (result.ok) {
-        // Use the storage layer's producer so the identity is shaped and
-        // time-boxed exactly like the shared verification record.
-        setIdentity(createFaydaVerification(user?.id ?? "", result.minimalData));
-      }
+      setVerificationError(!result.ok);
     } finally {
       setVerifying(false);
     }
   };
 
   const handleRegister = () => {
-    if (!identity || !company.trim()) return;
+    if (!isCurrentVerification(identity) || !company.trim()) return;
     const registration: VendorRegistration = {
       id: `VND-${Date.now()}`,
       company: company.trim(),
@@ -115,7 +113,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
   };
 
   const handleSubmitBid = () => {
-    if (!registered) return;
+    if (!registered || !isCurrentVerification(identity) || registered.contactSubjectId !== identity.subjectId) return;
     const next = vendors.map((v) =>
       v.id === registered.id ? { ...v, bidSubmittedAt: new Date().toISOString() } : v,
     );
@@ -156,6 +154,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
           </button>
         </div>
 
+        {verificationError && <p role="alert">Use the supplied demo identifier. · የተሰጠውን የማሳያ መለያ ይጠቀሙ።</p>}
         {/* Step 1 — Fayda verification of the representative */}
         <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6d527f]">{text("stepIdentity")}</p>
         {identity ? (

@@ -1,3 +1,4 @@
+import { useAuth } from '../auth/AuthContext';
 import { useState, useEffect } from "react";
 import { Dual } from "./Dual";
 import { REVIEW_STATUSES, type ReviewStatus } from "../reviewFilter";
@@ -15,7 +16,8 @@ export function HumanReviewPanel({ record, language, onSaveReview, onOpenFayda }
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus>(record.reviewStatus ?? "pending");
   const [reviewNote, setReviewNote] = useState<string>(record.reviewNote ?? "");
   const { verification } = useFayda();
-  const canSignOff = verification !== null;
+  const { can } = useAuth();
+  const canSignOff = can('performHumanReview') && verification !== null;
 
   useEffect(() => {
     setReviewStatus(record.reviewStatus ?? "pending");
@@ -28,7 +30,7 @@ export function HumanReviewPanel({ record, language, onSaveReview, onOpenFayda }
   return (
     <section className="human-review-section" aria-labelledby="human-review-title">
       <p className="eyebrow">
-        <Dual en="LOCAL-ONLY WORKFLOW" am="የአካባቢ የሥራ ሂደት" separator="" />
+        <Dual en="SHARED LOCAL DATABASE" am="የአካባቢ የሥራ ሂደት" separator="" />
       </p>
       <h3 id="human-review-title">
         <Dual en="Human Review" am="የሰው ግምገማ" separator="" />

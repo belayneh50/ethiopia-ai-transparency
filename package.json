@@ -7,14 +7,15 @@
     "packages/*"
   ],
   "scripts": {
-    "setup": "corepack pnpm --filter @ethiopia-ai/shared-types build && node -e \"const fs=require('fs');const ex=fs.readFileSync('.env.example','utf8');for(const f of ['.env','apps/api/.env','packages/database/.env']){if(!fs.existsSync(f)){fs.writeFileSync(f,ex);console.log('created ' + f + ' from .env.example');}}\" && docker compose up -d postgres && corepack pnpm --filter database exec prisma generate && corepack pnpm db:push && corepack pnpm --filter database exec prisma db seed",
+    "setup": "corepack pnpm --filter @ethiopia-ai/shared-types build && node -e \"const fs=require('fs');const ex=fs.readFileSync('.env.example','utf8');for(const f of ['.env','apps/api/.env','packages/database/.env']){if(!fs.existsSync(f)){fs.writeFileSync(f,ex);console.log('created ' + f + ' from .env.example');}}\" && docker compose up -d postgres && corepack pnpm --filter @ethiopia-ai/database exec prisma generate && corepack pnpm db:push && corepack pnpm --filter @ethiopia-ai/database exec prisma db seed",
     "dev": "corepack pnpm --filter @ethiopia-ai/shared-types build && concurrently \"corepack pnpm --filter api dev\" \"corepack pnpm --filter public-portal dev\"",
     "build": "corepack pnpm --filter @ethiopia-ai/shared-types build && corepack pnpm --filter api build && corepack pnpm --filter public-portal build",
     "test": "corepack pnpm --filter @ethiopia-ai/shared-types build && corepack pnpm --filter api test && corepack pnpm --filter public-portal test",
     "lint": "corepack pnpm --filter api lint && corepack pnpm --filter public-portal lint",
-    "db:push": "corepack pnpm --filter database push",
-    "db:migrate": "corepack pnpm --filter database migrate",
-    "db:studio": "corepack pnpm --filter database studio"
+    "db:push": "corepack pnpm --filter @ethiopia-ai/database push",
+    "db:migrate": "corepack pnpm --filter @ethiopia-ai/database migrate",
+    "db:studio": "corepack pnpm --filter @ethiopia-ai/database studio",
+    "test:unit": "corepack pnpm --filter @ethiopia-ai/shared-types build && corepack pnpm --filter api test:unit && corepack pnpm --filter public-portal test"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

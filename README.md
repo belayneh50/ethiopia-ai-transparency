@@ -1,173 +1,130 @@
-# ግልጽ ግዥ · Ethiopia AI Transparency Prototype
+# ግልጽ ግዥ · Ethiopia AI Transparency
 
-A bilingual Amharic–English local demonstration for explainable procurement review. Sign-in is real (JWT + role gates against a local API + Postgres); the procurement records you review remain synthetic demo data in the browser.
+A bilingual Amharic–English **synthetic local procurement demonstration**. Human reviewers interpret explainable workflow signals; the application does not determine fraud, approve procurement, or establish anyone's real identity.
 
----
+## Current architecture
 
-## Safeguards & Principles
-
-- **Synthetic Data Exclusively**: Uses synthetic procurement records. No real people, suppliers, agencies, biometric data, or government-confidential data are included.
-- **Three Explainable Review Signals**:
-  1. Unusually high comparative price (`> 1,500,000 ETB`)
-  2. Repeated supplier wins across sample buyers (`≥ 2 wins`)
-  3. Overdue approval or payment delays (`> 30 days open`)
-- **Prompts, Not Verdicts**: Every signal states that it is for authorized human review only and is **not proof of wrongdoing**.
-- **No Black-Box Risk Scoring**: The prototype does not produce numerical "fraud scores", accusations, or automated decisions.
-- **Controlled Gemini Integration**: Optional Gemini guidance sends only disclosed synthetic record fields after explicit reviewer confirmation. The response adapter uses strict regular expressions to reject accusatory language, bias claims, or automated recommendations.
-- **Manual Market-Reference Workflow**: An authorized reviewer may enter up to five comparable listings with specification, condition, ETB price, source URL, observation date, and an optional note. The app never scrapes or automatically collects marketplace data.
-- **Demo credentials only**: The four synthetic accounts and their documented passwords exist for reproducible demos. This is not production authentication — do not put real or confidential data in this app.
-
----
-
-## What runs where
-
-This is a pnpm workspace:
-
-| Piece | Where | Purpose | Port |
-| --- | --- | --- | --- |
-| Login / JWT API | `apps/api` (NestJS + Prisma) | `POST /api/v1/auth/login` issues JWTs; role-gated endpoints (`records`, `reviews`, `audit`, `auth/users`) | `:3001` |
-| Demo portal | `apps/public-portal` (Vite + React) | Bilingual review UI; records/review state is client-side demo data in `localStorage` | `:5173` |
-| Database | `packages/database` (Prisma schema + seed) | PostgreSQL; schema in `schema.prisma`, four demo users in `prisma/seed.ts` | `:5432` |
-| Shared types | `packages/shared-types` | Role/enum constants shared by API and portal | — |
-
-Signing in is the one thing the portal delegates to the API. Without the API running **and** the database seeded, the login screen shows `Network error` or `Login failed`.
-
-## Local Development & Testing
-
-### Prerequisites
-
-- Node.js 20+ with corepack enabled (`corepack enable`), pnpm.
-- **Docker** (Desktop or Engine) for the bundled PostgreSQL — or any Postgres 14+ you already run, with `DATABASE_URL` adjusted accordingly in the env files below.
-
-### From a clean checkout
-
-Run these from the repository root (they work in Windows Command Prompt/PowerShell and in Linux/macOS shells):
-
-```text
-corepack pnpm install     # 1. install workspace dependencies
-corepack pnpm setup       # 2. one-time: env files + Postgres + Prisma client/schema + demo users
-corepack pnpm dev         # 3. start the API (:3001) and the portal (:5173)
-```
-
-Then open [http://localhost:5173](http://localhost:5173) and sign in with a synthetic demo account. The login page's "Demo accounts" panel lists the usernames; passwords are documented next to them in `packages/shared-types/index.ts` — the single source both the Prisma seed and the portal panel derive from, so the seeded logins and the quick-fill list can never drift (demo credentials, not secrets):
-
-| Username | Role |
+| Component | Responsibility |
 | --- | --- |
-| `admin.demo` | Admin |
-| `recorder.demo` | Recorder (data entry) |
-| `reviewer.demo` | Reviewer |
-| `viewer.demo` | Read-only viewer |
+| `apps/public-portal` · React/Vite · port 5173 | Login, record forms, comparisons, human reviews, AI guidance, and saved change history |
+| `apps/api` · NestJS · port 3001 | JWT authentication, database-backed role checks, validation, record operations, audit events, authenticated Gemini endpoints |
+| `packages/database` · Prisma/PostgreSQL · port 5432 | Shared users, procurement records, reviews, comparable listings, and audit history |
+| `packages/shared-types` | Shared AI contracts, output adapters, prompts, fallback rules, and demo-account definitions |
 
-Press `Ctrl+C` to stop the servers.
+**PostgreSQL is the source of truth for procurement records, reviews, and comparables.** The portal loads them after login and refreshes on window focus or with **Refresh records**. A save must be confirmed by the API. The portal no longer writes these records to localStorage or silently falls back to a private browser dataset when the database is unavailable.
 
-### What `corepack pnpm setup` does (idempotent)
+Browser storage still holds local threshold preferences and simulated vendor registrations. Authentication and the mock Fayda checkpoint use sessionStorage. These demo settings and vendor/bid simulations are not shared database entities.
 
-1. Creates the three gitignored env files (`.env`, `apps/api/.env`, `packages/database/.env`) from `.env.example` if they are missing — a fresh clone has none, and both the Prisma CLI and the API need `DATABASE_URL`. Edit them if you are not using the bundled Postgres.
-2. `docker compose up -d postgres`.
-3. `prisma generate` (builds the Prisma client).
-4. `prisma db push` (syncs tables from `packages/database/schema.prisma`).
-5. `prisma db seed` (upserts the four demo users above).
+## Setup and resuming this checkout
 
-To run those steps manually instead (e.g. Docker-less), see the root `package.json` (`setup`, `db:push`, `db:migrate`, `db:studio`).
+Requirements: Node.js 20+ with Corepack/pnpm, and PostgreSQL 14+ (the supplied Docker Compose service is one option). Use a current supported Node.js release for local work.
 
-> **Windows note:** do not run `pnpm setup` (or `prisma generate`) while `pnpm dev` is running — the API holds the Prisma query-engine DLL open and generate fails with `EPERM`. Stop the servers, run setup, restart.
-
-#### One-click launchers
-
-After `corepack pnpm setup` has run once, `start-local.cmd` (Windows) and `start-local.sh` (Linux) start `pnpm dev` and open the portal in the default browser when it is ready.
-
-### Troubleshooting
-
-- **Login shows "Network error" or "Login failed":** the API must be up on `:3001` and the database seeded — run `corepack pnpm setup` then `corepack pnpm dev`. Verify the API with `curl http://localhost:3001/api/v1/records` (an anonymous call should return `401`, not hang or refuse).
-- **Port overrides:** the shell's environment beats `.env`. dotenv never overwrites an already-exported variable, so if your terminal or dev harness exports `PORT` (some export `PORT=0` for "any port"), the `.env` `PORT` is ignored. The API pins itself to `:3001` regardless (`Number(PORT) || 3001` in `apps/api/src/main.ts`) so the Vite proxy always finds it — but unset a shell `PORT` if you need a different port. `JWT_SECRET`, `CORS_ORIGIN`, and `GEMINI_API_KEY` behave the same way: exported values win over `.env`.
-- **`prisma generate` fails with `EPERM` (Windows):** a dev server is holding the query engine — stop it first (see above).
-
-### Run unit tests / build
+For an existing checkout, preserve its env files and database. **Do not use a database reset, remove Docker volumes, or overwrite existing credentials.** Stop only the project's known API/dev server before regenerating Prisma on Windows; a running API may lock its query-engine DLL.
 
 ```text
-corepack pnpm test       # portal (Vitest) + API (Jest)
-corepack pnpm build      # nest build + tsc/vite build
-```
-
----
-
-## Key Features & Enhancements
-
-### 1. Role-based demo login
-- Bilingual (Amharic–English) login screen with masked password + show/hide eye toggle, full keyboard support, and `prefers-reduced-motion` handling.
-- Four synthetic roles (`admin`, `recorder`, `reviewer`, `viewer`) mapped to a UI permission matrix in `apps/public-portal/src/auth/roles.ts` and enforced server-side by `RolesGuard` in `apps/api`.
-- Passwords are never persisted (token + user only), cleared after failed login/logout.
-- Sign-in state lives in `sessionStorage`, not `localStorage`: a fresh window or new browser session always starts at the login page, while a same-tab reload keeps you signed in; logging out clears the session. The demo records state stays in `localStorage` and is untouched by login/logout.
-- The topbar is fluid: at any desktop width the action cluster (language toggle, role badge, `Log out · ውጣ`) wraps onto its own row instead of being pushed off-screen, and the Records/Method nav links stay visible whenever they fit.
-- UX polish: higher-contrast inactive modal tabs, a faint vertical divider between the English and Amharic form columns in the add-record modal, and a capped line length for the Amharic hero subtitle.
-
-### 2. Visual Price Benchmark Gauge (`PriceBenchmarkChart`)
-- Displays an intuitive linear distribution gauge comparing the observed market range (`Low` to `High`) with the `Median`.
-- Visually pins the record's calculated unit price relative to the median, color-coding variances and highlighting whether unit prices fall outside observed comparables.
-- Provides accessible bilingual descriptions and formulas for human review.
-
-### 3. Local Session Persistence & Audit Data Management
-- Automatically preserves reviewer assessments, custom notes, and added sample records in `localStorage` across page reloads.
-- **Session Data Modal**:
-  - **Export JSON**: Download a complete audit snapshot with records, statuses, notes, and market comparisons.
-  - **Export CSV**: Export records and review assessments formatted for spreadsheet auditing.
-  - **Import JSON**: Restore a previous audit session file directly into the browser.
-  - **Reset to Defaults**: Clear all local changes and revert to initial sample data with a single click.
-
-### 4. Modular Component Layout
-- The portal lives under `apps/public-portal/src/components/` with single-responsibility pieces: `Topbar.tsx`, `SummaryMetrics.tsx`, `RecordTable.tsx`, `ReviewSummaryBar.tsx`, `RecordDetailModal.tsx`, `HumanReviewPanel.tsx`, `MarketReferencePanel.tsx`, `PriceBenchmarkChart.tsx`, `GeminiGuidancePanel.tsx`, `AddRecordModal.tsx`, `ExportAuditModal.tsx`, plus reusable `Dual.tsx` and `ShieldNotice.tsx`.
-
-### 5. Automated Testing Suite
-- **API e2e** (Jest, `apps/api/test/auth-rbac.e2e.spec.ts`, 21 tests): boots the real Nest `AppModule` on an ephemeral port against a dedicated test database that is created, schema-pushed, seeded, and dropped per run — the dev database is never touched and no manually-started servers are needed. It locks the login/RBAC contract: 201 for the four demo users, 401 on bad credentials and anonymous calls, 403/200 per the role matrix (recorder may create records but is denied review/comparables/audit; reviewer may review but not create; viewer is read-only), least-privilege register that ignores any body role, 400 on junk bodies, and 409 on duplicates.
-- **Portal unit tests** (Vitest):
-  - `marketReference.test.ts`: Deterministic median calculations (odd/even), unit price division, and quantity regex extraction.
-  - `geminiResponseAdapter.test.ts`: JSON parsing, candidate extraction, and regex rejection of prohibited accusatory words or risk scores.
-  - `reviewFilter.test.ts`: Status filter predicates and bilingual status mappings.
-  - `authStorage.test.ts`: Purge-on-load removes legacy `localStorage` auth keys, login writes to `sessionStorage` only, logout clears the session, and the demo records keys survive the whole lifecycle.
-
----
-
-## Optional Gemini Guidance Configuration
-
-1. From the repository root, copy `.env.example` to `.env.local` (Vite loads repo-root env files; the proxy reads `GEMINI_API_KEY` from there).
-2. Set a real `GEMINI_API_KEY` in `.env.local`.
-3. The key is read only by the local Vite server proxy in `apps/public-portal/vite.config.ts` and is never exposed to browser bundles.
-4. If Gemini is not configured or offline, the interface automatically falls back to safe local review questions.
-
-> **Never** put a real key in `.env.example` — that file is committed to git. (A real-looking key was committed there historically; if you ever copied it, rotate it. `.env*` files other than `.env.example` are gitignored.)
-
-### Gemini troubleshooting note
-
-The local proxy previously targeted `gemini-1.5-flash`, which is no longer available on the current Gemini API and therefore returned `404 Not Found`. The repair is intentionally centralized:
-
-- `apps/public-portal/src/geminiModel.ts` selects `gemini-3.6-flash` and sets a 60-second request timeout. Keep future model changes in this file instead of hard-coding model names in the proxy.
-- `apps/public-portal/vite.config.ts` reads the model constants and applies the timeout to the server-side Gemini request. Do not move `GEMINI_API_KEY` into client code or a `VITE_`-prefixed variable.
-- `apps/public-portal/src/geminiResponseAdapter.ts` accepts harmless negated text such as “does not provide a risk score,” while still rejecting an actual risk score or rating. This prevents a valid safe disclaimer from being mistaken for prohibited output.
-- Never print or commit the API-key value. Diagnose configuration by reporting only whether the key is present and by logging sanitized upstream status/error information.
-
-After changing the Gemini integration, verify it from the repository root:
-
-```bash
-corepack pnpm test
-corepack pnpm build
+corepack pnpm install
+corepack pnpm --filter @ethiopia-ai/shared-types build
+docker compose up -d postgres
+corepack pnpm --filter @ethiopia-ai/database generate
+corepack pnpm db:push
 corepack pnpm dev
 ```
 
-Then submit one synthetic record through **AI Guidance**. A successful request returns an overview, bilingual review questions, and a limitations statement. If it fails, check the local proxy response first: `404` usually indicates an unavailable model name, while a timeout indicates network latency or an upstream request that needs more time.
+The schema update adds quantity, unit, approval/payment dates, creator, and version columns. `db:push` applies the schema without an intentional reset; do not approve a data-loss/reset prompt if an unrelated schema drift is detected. Existing records remain in place. No automatic procurement seed or browser import runs on startup.
 
----
+For a genuinely fresh checkout, `corepack pnpm setup` creates only missing env files from `.env.example`, starts PostgreSQL, generates the Prisma client, pushes the schema, and creates missing synthetic accounts. The user seed preserves existing accounts: it does not reset their passwords, roles, or activation state.
 
-## Manual Market-Reference Workflow Details
+The API reads the repository-root `.env` and then `apps/api/.env`; process environment variables take precedence. Prisma commands run in `packages/database` and read that package's `.env`. Ensure `DATABASE_URL` resolves to the **same intended database** in both places. This milestone does not rewrite existing env files. An already customized demo account may no longer use its documented initial password.
 
-1. Open any synthetic record and add reviewer-supplied comparable listings in its Human Review panel (`SYN-ET-2402` includes one fictional `example.com` comparison solely for demonstration).
-2. Comparable prices are entered as unit prices. The browser deterministically sorts them and computes Low, Median, High, Difference, and Percentage Variance.
-3. When the synthetic record label ends with an explicit quantity such as `(20)`, the app calculates `record unit price = total value ÷ quantity` and benchmarks it against the median unit price.
-4. If no quantity is specified, the system does not guess, ensuring human reviewers verify the unit basis directly.
+Open [the local portal](http://localhost:5173). Synthetic account names are `admin.demo`, `recorder.demo`, `reviewer.demo`, and `viewer.demo`. Initial demo passwords are documented in `packages/shared-types/index.ts` and shown by the demo login helper. They are for local synthetic data only.
 
----
+## Roles enforced by the API
 
-## Repository Status
+| Operation | Admin | Recorder | Reviewer | Viewer |
+| --- | --- | --- | --- | --- |
+| Read shared records and public review status | Yes | Yes | Yes | Yes |
+| Create records | Yes | Yes | No | No |
+| Edit underlying records | All records | Own created records | No | No |
+| Read reviewer notes / saved audit history | Yes | No | Yes | No |
+| Read comparable listings | Yes | No | Yes | Yes |
+| Add/remove comparables; save reviews; sign off audit reports | Yes | No | Yes | No |
+| Request Gemini audit/guidance | Yes | No | Yes | No |
+| Import browser/file snapshots | Yes | No | No | No |
 
-- The login/RBAC work — login screen, four synthetic roles, the JWT backend (NestJS + Prisma/PostgreSQL) with role-gated endpoints, the seeded demo users, and the API e2e suite — is merged into `main`.
-- The review portal itself remains a client-side synthetic demo: records live in the browser's `localStorage`; only sign-in is delegated to the API.
-- Known follow-ups: gate the portal's Gemini proxy by role, and make the API the source of truth for records — the guarded endpoints exist and are tested, but the portal only calls the API for login so far.
+Backend `governor` maps to Recorder, and `public` maps to Viewer. JWT validation reloads the user from the database, so role enforcement uses the current server record. Request bodies cannot select their actor or override permissions. Basic record responses redact internal notes, reviewer identity/date, and, for Recorder, comparables. Threshold changes are an Admin-only **browser demo preference**, not a server policy or security control.
+
+## Preserve and migrate browser data
+
+1. Sign in as Admin and complete the synthetic Fayda checkpoint.
+2. Choose **Import browser copy / samples**. It reads the original record/comparable storage keys; if no browser copy exists, it imports the starter sample dataset. The old browser copy is not changed or erased. Invalid snapshots produce an error rather than substituting data.
+3. The result lists imported and skipped IDs. **An existing record ID is skipped completely**, including its review and comparables. A duplicate never overwrites a newer database record. Review the retained original snapshot separately if it contains differences you want to reconcile.
+4. **Export & Import Audit Session** also accepts a saved JSON snapshot. Import is Admin-only, validated, and limited to 500 records and five comparables per record per file. Exports reflect the current user's permitted database view.
+
+Import runs in a transaction. A failed batch does not leave partial records behind. Historical review statuses/notes/dates are preserved as imported data, with no newly claimed reviewer identity. The import event attributes the import to the signed-in Admin and marks historical assessments as unverified. Raw legacy identity fields are not stored as new sign-off evidence. Keep original files/browser copies until you have reviewed skipped IDs and verified the database contents. Browser data lost during the Windows reset cannot be reconstructed by this import feature.
+
+## Shared updates and audit history
+
+Record creation/editing, review changes, comparable additions/removals, snapshot imports, and explicit report sign-offs write their corresponding audit events **in the same PostgreSQL transaction** as the change. If the event cannot be written, the change rolls back.
+
+Events contain the authenticated actor ID, record/entity/action, server timestamp, and before/after values appropriate to the operation. **Saved change history** in each record detail is available to Admin and Reviewer, with pagination and expandable values. Imported history is identified as imported; it is not retroactively attributed to a verified officer.
+
+Edits use a record version and serializable transactions. If another user changed the record, the API returns `409`: refresh, review the new values, and retry deliberately. Recorder ownership is checked on the server. Completed duration calculations use the payment date when supplied; imported snapshots retain their recorded duration. Threshold-based display signals remain deterministic local demo calculations.
+
+This is a durable local audit trail, **not immutable or legally binding evidence**. Database administrators can change the database, and backups/retention/tamper-evident storage are not provided. There is no bulk destructive reset control in the portal.
+
+## Gemini: reuse the existing playground key
+
+Keep the existing key. No replacement, rotation, deletion, or credential rewrite is required by this milestone.
+
+The backend uses `GEMINI_API_KEY` in the root `.env` (or the server process environment). `GEMINI_MODEL` optionally selects the model available to that key; otherwise the shared model default applies. Both browser flows call authenticated Nest endpoints:
+
+- `POST /api/v1/ai/audit` — structured workflow transparency assessment.
+- `POST /api/v1/ai/guidance` — neutral reviewer questions with manually supplied market references.
+
+The Vite dev/preview server only forwards `/api` to Nest. It no longer calls Gemini itself. The browser does not send an API key. An existing legacy `VITE_GEMINI_API_KEY` entry is left untouched and unused; Vite exposes only deliberately public `PUBLIC_` variables. Never move the provider request back into browser code.
+
+Requests use structured JSON schemas and validated English/Amharic outputs. Missing configuration, provider rate limits, network failure, or invalid output produce labeled fallback content. Authentication/role failures are not proof that the provider works. The offline score is a demo heuristic: start at 60, subtract 10 per supplied signal (up to 30), 6 for one or fewer bids, and 5 for 90+ days open. It is not a calibrated probability, confidence estimate, fraud score, or decision. Human review and source-document checks remain necessary.
+
+To make **one** live synthetic check through the running authenticated API:
+
+```text
+node scripts/smoke-gemini.cjs
+```
+
+The script uses the documented Admin demo login, sends at most one provider request, prints no keys/tokens/generated record data, and creates no database record. Success requires `source=gemini` and a bilingual structured response. Fallback output explicitly fails live verification. If the existing Admin password was customized, use the portal with the correct login instead. A provider/model rejection must be resolved against the existing configuration; fallback must not be described as live success.
+
+## Fayda KYC demonstration
+
+Fayda remains an explicitly labeled mock. Only the supplied synthetic success identifier is accepted; no real FIN should be entered. The service simulates failure cases and returns a clearly unsigned mock token. It does not contact NIDP, perform real biometric/OTP verification, or provide a compliant OIDC identity service.
+
+The portal requires the demo checkpoint for entry to the Admin/Reviewer workspace, Admin threshold changes, human-review/report sign-off, and simulated vendor registration/bid submission. Verification expires after twenty minutes and is tied to the signed-in demo user. Failed verification cannot retain an earlier successful vendor identity. Stored verification and new sign-off references use a synthetic subject reference rather than a raw FIN.
+
+**The Fayda checkpoint is a browser demonstration, not server-side identity assurance.** Actual data authorization comes from the API's authenticated roles. An AI audit is not automatically signed off: an authorized reviewer must explicitly acknowledge the result. Vendor registration and bidding remain local simulations; identity verification alone would not establish ownership, exclude shell companies, or detect conflicts of interest.
+
+## Interface behavior
+
+The portal keeps related dialogs visually consistent through a shared centered modal shell with a dimmed backdrop, bounded viewport height, keyboard focus handling, and one active modal at a time. The bilingual **Add sample record** form uses a wider desktop layout (up to 780px) and collapses to a single column on mobile while retaining internal scrolling.
+
+On screens up to 600px wide, the desktop toolbar becomes a compact header showing the project identity, role, and mock eKYC status. Records, Method, Session, Thresholds, eKYC, Vendor registration, language controls, and Logout remain available in an accessible slide-down menu. The menu exposes its state through `aria-expanded`, closes on Escape or outside input, returns focus to its opener, and closes before launching another dialog.
+
+Saved change history is filtered to the current database record and ordered newest first using server timestamps plus a stable ID tie-breaker. The compact modal pager shows two entries at a time, reports the current page and total event count, disables boundaries accurately, and preserves the record filter while moving between pages.
+
+## Validation and current limits
+
+```text
+corepack pnpm test:unit
+corepack pnpm test
+corepack pnpm build
+```
+
+`test:unit` runs API tests without PostgreSQL plus the portal tests. The full API test command provisions and drops a dedicated test database; it must never target the development database. Added integration cases cover two users reading the same saved record, reviewer persistence, actor spoofing, forbidden actions, Recorder ownership, optimistic conflicts, comparable changes, duplicate imports, and rollback when an audit event fails.
+
+Verified for this milestone:
+
+- The additive Prisma schema was applied to the existing local PostgreSQL database without a reset or reseed, and the Nest API and Vite portal were started against it.
+- API role/unit checks and portal tests passed, including the focused Topbar tests. API and portal TypeScript compilation passed.
+- Browser checks confirmed Admin login, the synthetic Fayda checkpoint and auto-close, centered shared modals, the wider Add Record form at desktop and mobile widths, the compact mobile menu at 319px and 390px, and audit-history Next/Previous behavior with correct boundary states.
+- Audit pagination was checked against an existing three-event record: page sizes were 2 and 1, all three event IDs were unique, and the database record filter remained unchanged.
+- One authenticated synthetic Gemini request completed through Nest using the existing key and `gemini-2.5-flash`. The structured bilingual result returned `source=gemini`; no database record was created and no key or token was printed or committed.
+
+All data and identities in this repository are synthetic local-demo material. The application is not a production procurement system, live Fayda/NIDP integration, fraud detector, authorization substitute, or source of immutable/legal evidence. Production use would require managed secrets, hardened authentication, migrations and backups, tamper-evident audit retention, observability, security review, real identity-provider integration, and applicable Ethiopian legal and procurement controls.

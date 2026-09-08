@@ -4,7 +4,7 @@ import type { AddRecordData, Language } from "../types";
 
 type AddRecordModalProps = {
   onClose: () => void;
-  onSubmit: (data: AddRecordData) => void;
+  onSubmit: (data: AddRecordData) => Promise<void>;
   language: Language;
 };
 
@@ -53,7 +53,7 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
     setErrors((current) => (current[field] ? { ...current, [field]: "" } : current));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
     const required = localText("Required", "ይህ መረጃ ያስፈልጋል");
@@ -91,9 +91,8 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
     if (Object.keys(nextErrors).length) return;
 
     const category = categories[formData.category];
-    setShowSuccess(true);
-    window.setTimeout(() => {
-      onSubmit({
+    try {
+      await onSubmit({
         item: formData.item.trim() || formData.itemAm.trim(),
         itemAm: formData.itemAm.trim() || formData.item.trim(),
         category: category.en,
@@ -109,7 +108,8 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
         status: formData.status,
         statusAm: statusMap[formData.status],
       });
-    }, 1500);
+      setShowSuccess(true);
+    } catch (error) { setErrors({ submit: error instanceof Error ? error.message : "Save failed" }); }
   };
 
   return (
@@ -139,12 +139,13 @@ export function AddRecordModal({ onClose, onSubmit, language }: AddRecordModalPr
               <Dual en="Synthetic demo data only" am="ሰው ሰራሽ የማሳያ መረጃ ብቻ" />
             </strong>
             <Dual
-              en="This form creates synthetic demo data for this browser session. Do not enter real procurement, personal, biometric, confidential, or government data."
+              en="This form creates synthetic demo data in the shared local database. Do not enter real procurement, personal, biometric, confidential, or government data."
               am="ይህ ቅጽ ለዚህ የአሳሽ ክፍለ ጊዜ ሰው ሰራሽ የማሳያ መረጃ ብቻ ይፈጥራል። እውነተኛ የግዥ፣ የግል፣ ባዮሜትሪክ፣ ሚስጥራዊ ወይም የመንግሥት መረጃ አያስገቡ።"
             />
           </p>
         </div>
 
+        {errors.submit && <p role="alert">{errors.submit}</p>}
         {showSuccess ? (
           <div className="modal-success">
             <div className="success-checkmark">✓</div>

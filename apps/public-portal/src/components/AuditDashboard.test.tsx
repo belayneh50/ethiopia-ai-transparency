@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ can: () => true }), apiFetch: vi.fn() }));
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
 import { FaydaContext, maskFin } from "../FaydaContext";

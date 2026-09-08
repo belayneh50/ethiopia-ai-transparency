@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ can: () => true }) }));
 import { renderToStaticMarkup } from "react-dom/server";
 import { FaydaContext } from "../FaydaContext";
 import { HumanReviewPanel } from "./HumanReviewPanel";

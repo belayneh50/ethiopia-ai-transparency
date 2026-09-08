@@ -1,3 +1,4 @@
+import { useAuth } from '../auth/AuthContext';
 import { useState, useRef } from "react";
 import { Dual } from "./Dual";
 import type { ComparableListing } from "../marketReference";
@@ -8,8 +9,7 @@ type ExportAuditModalProps = {
   comparablesByRecord: Record<string, ComparableListing[]>;
   language: Language;
   onClose: () => void;
-  onImportSession: (session: AuditSessionExport) => void;
-  onResetToDefaults: () => void;
+  onImportSession: (session: AuditSessionExport) => Promise<void>;
 };
 
 export function ExportAuditModal({
@@ -18,8 +18,9 @@ export function ExportAuditModal({
   language,
   onClose,
   onImportSession,
-  onResetToDefaults,
 }: ExportAuditModalProps) {
+  const { can } = useAuth();
+  const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,14 +108,15 @@ export function ExportAuditModal({
     setImportError(null);
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
+      setImporting(true);
       try {
         const text = evt.target?.result as string;
         const parsed = JSON.parse(text) as AuditSessionExport;
         if (!parsed.records || !Array.isArray(parsed.records) || !parsed.records.length) {
           throw new Error("Invalid session file structure: missing records array.");
         }
-        onImportSession(parsed);
+        await onImportSession(parsed);
         setImportSuccess(true);
         window.setTimeout(() => {
           onClose();
@@ -122,7 +124,7 @@ export function ExportAuditModal({
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to parse session file.";
         setImportError(msg);
-      }
+      } finally { setImporting(false); }
     };
     reader.readAsText(file);
   };
@@ -150,8 +152,8 @@ export function ExportAuditModal({
 
         <p className="export-intro">
           <Dual
-            en="Download your local audit reviews, notes, and reviewer-supplied comparables, or restore a previous session file. All data remains in your local browser."
-            am="የአካባቢ ግምገማዎችዎን፣ ማስታወሻዎችዎን እና በገምጋሚ የቀረቡ ማነጻጸሪያዎችን ያውርዱ፣ ወይም ቀደም ሲል የተቀመጠ ፋይል ይመልሱ። ሁሉም መረጃ በአካባቢዎ አሳሽ ውስጥ ብቻ ይቆያል።"
+            en="Export your permitted database records. Admins can import a browser/session snapshot; duplicate IDs are skipped without overwriting database records."
+            am="ፈቃድ ያላቸውን የዳታቤዝ መዝገቦች ያውርዱ። አስተዳዳሪዎች ቅጂ ሊያስገቡ ይችላሉ፤ ተመሳሳይ መለያዎች ሳይቀየሩ ይዘለላሉ።"
           />
         </p>
 
@@ -186,7 +188,7 @@ export function ExportAuditModal({
             </div>
 
             {/* Import section */}
-            <div className="export-card">
+            {can('importSession') && <div className="export-card">
               <h3>
                 <Dual en="2. Restore Saved Session" am="2. የተቀመጠ የግምገማ ፋይል ጫን" />
               </h3>
@@ -205,7 +207,7 @@ export function ExportAuditModal({
               />
               <button
                 className="btn-import"
-                onClick={() => fileInputRef.current?.click()}
+                disabled={importing} onClick={() => fileInputRef.current?.click()}
               >
                 <Dual en="Choose JSON Session File…" am="የJSON ፋይል ምረጥ…" />
               </button>
@@ -214,38 +216,9 @@ export function ExportAuditModal({
                   {importError}
                 </p>
               )}
-            </div>
+            </div>}
 
-            {/* Reset section */}
-            <div className="export-card reset-card">
-              <h3>
-                <Dual en="3. Reset to Initial Sample" am="3. ወደ መጀመሪያው የሙከራ ውሂብ መልስ" />
-              </h3>
-              <p>
-                <Dual
-                  en="Erase all locally added sample records, reviewer notes, and custom market comparisons."
-                  am="ሁሉንም በአካባቢ የታከሉ የሙከራ መዝገቦችን፣ ማስታወሻዎችን እና ብጁ የገበያ ማነጻጸሪያዎችን ያጽዱ።"
-                />
-              </p>
-              <button
-                className="btn-reset-all"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      fieldText(
-                        "Reset all session data to initial sample records? Custom records and reviews will be cleared.",
-                        "ሁሉንም የግምገማ መረጃዎች ወደ መጀመሪያው ናሙና ይመልሱ? ብጁ መዝገቦች እና ግምገማዎች ይጠፋሉ።"
-                      )
-                    )
-                  ) {
-                    onResetToDefaults();
-                    onClose();
-                  }
-                }}
-              >
-                <Dual en="Reset all data to defaults" am="ሁሉንም መረጃዎች ወደ ነባሪ መልስ" />
-              </button>
-            </div>
+
           </div>
         )}
       </section>

@@ -1,3 +1,4 @@
+import { useAuth } from '../auth/AuthContext';
 import { useState } from "react";
 import { Dual } from "./Dual";
 import { PriceBenchmarkChart } from "./PriceBenchmarkChart";
@@ -14,7 +15,7 @@ type MarketReferencePanelProps = {
   record: RecordItem;
   language: Language;
   comparables: ComparableListing[];
-  onAddComparable: (listing: ComparableListing) => void;
+  onAddComparable: (listing: ComparableListing) => void | Promise<void>;
   onRemoveComparable: (id: string) => void;
 };
 
@@ -25,6 +26,8 @@ export function MarketReferencePanel({
   onAddComparable,
   onRemoveComparable,
 }: MarketReferencePanelProps) {
+  const { can } = useAuth();
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({
     item: "",
     condition: "",
@@ -50,7 +53,8 @@ export function MarketReferencePanel({
     marketSummary.differenceFromMedian !== null &&
     marketSummary.percentFromMedian !== null;
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
+    if (saving || !can('addVerifyComparable')) return;
     if (comparables.length >= 5) return;
     const price = Number(draft.price);
     let urlValid = true;
@@ -112,12 +116,14 @@ export function MarketReferencePanel({
     };
 
     try {
-      onAddComparable(listing);
+      setSaving(true);
+      await onAddComparable(listing);
     } catch (err) {
-      console.error("Failed to add comparable listing", err);
+      setSaving(false);
       setHasError(true);
       return;
     }
+    setSaving(false);
     setDraft({
       item: "",
       condition: "",
@@ -175,7 +181,7 @@ export function MarketReferencePanel({
               <Dual en="Reviewer-supplied" am="በገምጋሚ የቀረበ" />
             </em>
           </div>
-          <button onClick={() => onRemoveComparable(listing.id)}>
+          <button disabled={!can('addVerifyComparable')} onClick={() => onRemoveComparable(listing.id)}>
             <Dual en="Remove" am="አስወግድ" />
           </button>
         </article>
@@ -280,7 +286,7 @@ export function MarketReferencePanel({
       )}
 
       {/* Add comparable form */}
-      {comparables.length < 5 && (
+      {can('addVerifyComparable') && comparables.length < 5 && (
         <div className="comparable-form">
           <input
             aria-label={fieldText("Item or specification", "ዕቃ ወይም ዝርዝር መግለጫ")}
@@ -327,7 +333,7 @@ export function MarketReferencePanel({
             value={draft.note}
             onChange={(e) => setDraft({ ...draft, note: e.target.value })}
           />
-          <button onClick={handleAdd}>
+          <button disabled={saving} onClick={() => void handleAdd()}>
             <Dual en="Add reviewer-supplied listing" am="የገበያ ማነጻጸሪያ ጨምር" />
           </button>
         </div>

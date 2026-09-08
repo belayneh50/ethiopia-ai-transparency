@@ -12,7 +12,7 @@ export async function requestTransparencyAudit(input: TransparencyAuditInput): P
     const value = data as Record<string, unknown>;
     if (value.source !== 'gemini' && value.source !== 'fallback') throw new Error('response_contract');
     return { ...adaptTransparencyAuditText(JSON.stringify(value), input.language), source: value.source,
-      ...(value.source === 'fallback' ? { fallbackReason: 'upstream' as const } : {}) };
+      ...(value.source === 'fallback' ? { fallbackReason: (['unconfigured', 'network', 'quota', 'upstream', 'response_contract'].includes(String(value.fallbackReason)) ? value.fallbackReason : 'upstream') as NonNullable<TransparencyAuditResult['fallbackReason']> } : {}) };
   } catch (error) {
     if (error instanceof Error && error.message === 'access_denied') throw error;
     return { ...createTransparencyAuditFallback(input), fallbackReason: 'network' };

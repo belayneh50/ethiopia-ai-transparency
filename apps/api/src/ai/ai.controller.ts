@@ -6,9 +6,8 @@ import { AiService } from './ai.service';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard, RolesGuard)
-// Governors record the synthetic records the audit runs on, so they need the
-// same read-side AI aid as admins/reviewers (viewers stay excluded).
-@Roles(UserRole.admin, UserRole.reviewer, UserRole.governor)
+// AI review is reserved for Admin and Reviewer, matching the portal capability.
+@Roles(UserRole.admin, UserRole.reviewer)
 export class AiController {
   constructor(private readonly ai: AiService) {}
 

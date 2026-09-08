@@ -1,3 +1,5 @@
+import { useAuth } from '../auth/AuthContext';
+import { AuditHistory } from './AuditHistory';
 import { useState } from "react";
 import { Dual } from "./Dual";
 import { ShieldNotice } from "./ShieldNotice";
@@ -21,8 +23,11 @@ type RecordDetailModalProps = {
   guidance: GeminiReviewGuidance | null;
   guidanceLoading: boolean;
   onClose: () => void;
+  onEdit?: () => void;
+  feedback?: string;
+  onRefresh?: () => void;
   onSaveReview: (recordId: string, status: ReviewStatus, note: string) => void;
-  onAddComparable: (listing: ComparableListing) => void;
+  onAddComparable: (listing: ComparableListing) => void | Promise<void>;
   onRemoveComparable: (id: string) => void;
   onAskGemini: () => void;
   onOpenFayda: () => void;
@@ -38,12 +43,16 @@ export function RecordDetailModal({
   guidance,
   guidanceLoading,
   onClose,
+  onEdit,
+  feedback,
+  onRefresh,
   onSaveReview,
   onAddComparable,
   onRemoveComparable,
   onAskGemini,
   onOpenFayda,
 }: RecordDetailModalProps) {
+  const { can } = useAuth();
   const [showMemo, setShowMemo] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const showEn = language !== "am";
@@ -90,6 +99,8 @@ export function RecordDetailModal({
           <span className="am-only">{record.itemAm}</span>
         </h2>
 
+        {feedback && <p role="alert">{feedback}</p>}
+        {onRefresh && <button onClick={onRefresh}><Dual en="Reload saved record (replaces the draft)" am="የተቀመጠውን መዝገብ ጫን (ረቂቁን ይተካል)" /></button>}
         <div className="modal-tabs no-print">
           <button
             className={activeTab === "overview" ? "active" : ""}
@@ -99,19 +110,19 @@ export function RecordDetailModal({
           </button>
           <button
             className={activeTab === "market" ? "active" : ""}
-            onClick={() => setActiveTab("market")}
+            disabled={!can('accessMarketComparisons')} onClick={() => setActiveTab("market")}
           >
             <Dual en="Market Range" am="የገበያ ዋጋ" />
           </button>
           <button
             className={activeTab === "review" ? "active" : ""}
-            onClick={() => setActiveTab("review")}
+            disabled={!can('performHumanReview')} onClick={() => setActiveTab("review")}
           >
             <Dual en="Human Review" am="የሰው ግምገማ" />
           </button>
           <button
             className={activeTab === "guidance" ? "active" : ""}
-            onClick={() => setActiveTab("guidance")}
+            disabled={!can('requestGemini')} onClick={() => setActiveTab("guidance")}
           >
             <Dual en="AI Guidance" am="የAI መመሪያ" />
           </button>
@@ -179,7 +190,7 @@ export function RecordDetailModal({
             </>
           )}
 
-          {activeTab === "market" && (
+          {activeTab === "market" && can('accessMarketComparisons') && (
             <MarketReferencePanel
               record={record}
               language={language}
@@ -189,7 +200,7 @@ export function RecordDetailModal({
             />
           )}
 
-          {activeTab === "review" && (
+          {activeTab === "review" && can('performHumanReview') && (
             <HumanReviewPanel
               record={record}
               language={language}
@@ -198,7 +209,7 @@ export function RecordDetailModal({
             />
           )}
 
-          {activeTab === "guidance" && (
+          {activeTab === "guidance" && can('requestGemini') && (
             <GeminiGuidancePanel
               record={record}
               language={language}
@@ -211,6 +222,8 @@ export function RecordDetailModal({
           )}
         </div>
 
+        {onEdit && <button onClick={onEdit}><Dual en="Edit record" am="መዝገብ አስተካክል" /></button>}
+        {can('viewInternalNotes') && record.databaseId && <AuditHistory recordId={record.databaseId} revision={record.version} />}
         {showMemo && (
           <AuditMemoReport
             record={record}

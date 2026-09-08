@@ -14,7 +14,7 @@ async function main() {
     const passwordHash = await bcrypt.hash(account.password, 10);
     const user = await prisma.user.upsert({
       where: { email: account.username },
-      update: { name: account.name, role: account.role, isActive: true, passwordHash },
+      update: {}, // Existing accounts are preserved; setup never resets their credentials or role.
       create: {
         email: account.username,
         name: account.name,

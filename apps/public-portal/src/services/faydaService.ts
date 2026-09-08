@@ -13,7 +13,7 @@ export const FAYDA_FIN_LENGTH = 12;
 /** Simulated NIDP round-trip latency so the caller sees a realistic async flow. */
 export const FAYDA_MOCK_LATENCY_MS = 200;
 /** The mock "identity" tokens live for five simulated minutes. */
-export const FAYDA_TOKEN_TTL_SECONDS = 300;
+export const FAYDA_TOKEN_TTL_SECONDS = 1200;
 
 const FIN_STRUCTURE = /^\d{12}$/;
 

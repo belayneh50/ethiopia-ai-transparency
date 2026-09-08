@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as recordsApi from './recordsApi';
+import { AuditHistory } from './components/AuditHistory';
+import { EditRecordModal } from './components/EditRecordModal';
+import { isCurrentVerification } from './faydaStorage';
 import { Topbar } from "./components/Topbar";
 import { SummaryMetrics } from "./components/SummaryMetrics";
 import { AuditDashboard } from "./components/AuditDashboard";
@@ -95,34 +99,23 @@ function withComputedSignals(items: RecordItem[], settings: { price: number; rep
 }
 
 function loadSavedRecords(): RecordItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_RECORDS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length) return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return initialRecords;
+  const raw = localStorage.getItem(STORAGE_KEY_RECORDS);
+  if (!raw) return initialRecords;
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed) || !parsed.length) throw new Error('Browser snapshot has no records. Export and inspect it first.');
+  return parsed as RecordItem[];
 }
-
 function loadSavedComparables(): Record<string, ComparableListing[]> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_COMPARABLES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return initialComparables;
+  const raw = localStorage.getItem(STORAGE_KEY_COMPARABLES);
+  if (!raw) return initialComparables;
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid browser comparables snapshot.');
+  return parsed as Record<string, ComparableListing[]>;
 }
 
 export default function App() {
-  const [records, setRecords] = useState<RecordItem[]>(loadSavedRecords);
-  const [comparablesByRecord, setComparablesByRecord] = useState<Record<string, ComparableListing[]>>(loadSavedComparables);
+  const [records, setRecords] = useState<RecordItem[]>([]);
+  const [comparablesByRecord, setComparablesByRecord] = useState<Record<string, ComparableListing[]>>({});
   const [language, setLanguage] = useState<Language>("both");
   const [query, setQuery] = useState("");
   const [signalFilter, setSignalFilter] = useState<"all" | "flagged" | SignalKey>("all");
@@ -140,30 +133,68 @@ export default function App() {
   const [geminiLoading, setGeminiLoading] = useState(false);
 
   const { settings } = useSettings();
-  const { isAuthenticated, user, logout, role, can } = useAuth();
+  const { isAuthenticated, token, user, logout, role, can } = useAuth();
   const { verification } = useFayda();
+  // Re-check sessionStorage verification when storage/events change (so the demo checkpoint vanishes after Fayda verifies)
+  useEffect(() => {
+    const onStorage = () => { const v = window.sessionStorage.getItem('fayda_verification'); if (v) { try { const parsed = JSON.parse(v); if (parsed && parsed.userId === user?.id) { /* verification state handled by FaydaProvider */ } } catch { /* ignore */ } } };
+    window.addEventListener('storage', onStorage);
+    const interval = window.setInterval(() => {
+      const raw = window.sessionStorage.getItem('fayda_verification');
+      if (raw) {
+        try { const parsed = JSON.parse(raw); if (parsed && parsed.userId === user?.id && parsed.expiresAt && Date.parse(parsed.expiresAt) > Date.now()) { /* refresh verification state */ } } catch { /* ignore */ }
+      }
+    }, 500);
+    return () => { window.removeEventListener('storage', onStorage); window.clearInterval(interval); };
+  }, [user]);
 
   const showEn = language !== "am";
   const showAm = language !== "en";
   const fieldText = (en: string, am: string) =>
     language === "am" ? am : language === "en" ? en : `${en} · ${am}`;
 
-  // Persist session changes to localStorage safely
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
-    } catch {
-      // ignore quota errors
-    }
-  }, [records]);
+  const openOnlyModal = (modal: "add" | "export" | "settings" | "fayda" | "vendor") => {
+    setAddModalOpen(modal === "add");
+    setExportModalOpen(modal === "export");
+    setSettingsModalOpen(modal === "settings");
+    setFaydaModalOpen(modal === "fayda");
+    setVendorModalOpen(modal === "vendor");
+  };
 
+  const [dataError, setDataError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<RecordItem | null>(null);
+  const epoch = useRef(0);
+  const mutationLock = useRef(false);
+  const refresh = useCallback(async (updateSelected = false) => {
+    const generation = epoch.current;
+    const result = await recordsApi.loadRecords(token);
+    if (generation !== epoch.current) return;
+    setRecords(withComputedSignals(result.records, settings));
+    setComparablesByRecord(result.comparables);
+    // Background refresh must not silently overwrite an open review draft or its version.
+    if (updateSelected) setSelected(current => current ? result.records.find(r => r.id === current.id) ?? null : null);
+    setDataError('');
+  }, [token, settings]);
   useEffect(() => {
+    epoch.current++;
+    setRecords([]); setComparablesByRecord({}); setSelected(null); setEditing(null);
+    if (!token) return;
+    let active = true;
+    const reload = () => { void refresh().catch(() => { if (active) setDataError('Database unavailable. Your browser copy is unchanged. · ዳታቤዙ አይገኝም። የአሳሹ ቅጂ አልተቀየረም።'); }); };
+    reload(); window.addEventListener('focus', reload);
+    return () => { active = false; epoch.current++; window.removeEventListener('focus', reload); };
+  }, [token, refresh]);
+  const mutate = async (work: () => Promise<unknown>) => {
+    if (mutationLock.current) throw new Error('A save is already in progress.');
+    mutationLock.current = true; setBusy(true); setDataError('');
     try {
-      localStorage.setItem(STORAGE_KEY_COMPARABLES, JSON.stringify(comparablesByRecord));
-    } catch {
-      // ignore
+      await work();
+      try { await refresh(true); } catch { setDataError('Saved to the database, but refresh failed. Refresh before another edit. · በዳታቤዝ ተቀምጧል፤ ማደስ አልተሳካም። ከሌላ ለውጥ በፊት ያድሱ።'); }
     }
-  }, [comparablesByRecord]);
+    catch (error) { setDataError(error instanceof Error ? error.message : 'Save failed. · ማስቀመጥ አልተሳካም።'); throw error; }
+    finally { mutationLock.current = false; setBusy(false); }
+  };
 
   // Close modals on Escape
   useEffect(() => {
@@ -214,123 +245,29 @@ export default function App() {
     setGeminiGuidance(null);
   };
 
-  const handleSaveReview = (recordId: string, nextStatus: ReviewStatus, nextNote: string) => {
-    if (nextStatus === "pending") return;
-    const reviewDate = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-    // Tie the sign-off to the current Fayda-verified identity (audit trail).
-    // The UI gate prevents unverified saves; this stamps whatever identity the
-    // session holds so the recorded assessment is attributable.
-    const signedBy = verification ? { name: verification.fullName, subjectId: verification.subjectId } : undefined;
-    const update = (record: RecordItem): RecordItem =>
-      record.id === recordId
-        ? {
-            ...record,
-            reviewStatus: nextStatus,
-            reviewNote: nextNote.trim(),
-            reviewDate,
-            reviewSignedBy: signedBy,
-          }
-        : record;
-
-    setRecords((current) => current.map(update));
-    setSelected((current) => (current ? update(current) : null));
+  const handleSaveReview = async (recordId: string, nextStatus: ReviewStatus, nextNote: string) => {
+    const record = selected?.id === recordId ? selected : records.find(r => r.id === recordId);
+    if (!record || !can('performHumanReview') || !isCurrentVerification(verification)) return;
+    try { await mutate(() => recordsApi.saveReview(record, nextStatus, nextNote)); }
+    catch { /* retain entered values; error shown above */ }
   };
-
-  const handleResetReviews = () => {
-    const message = fieldText(
-      "Reset all local reviews? This will clear human review assessments.",
-      "ሁሉንም የአካባቢ ግምገማዎች ዳግም ይጀምሩ? ይህ የሰው ግምገማዎችን ያጸዳል።"
-    );
-    if (!window.confirm(message)) return;
-    const clearReview = (record: RecordItem): RecordItem => ({
-      ...record,
-      reviewStatus: undefined,
-      reviewNote: undefined,
-      reviewDate: undefined,
-    });
-    setRecords((current) => current.map(clearReview));
-    setSelected((current) => (current ? clearReview(current) : null));
-    setReviewFilter("all");
+  const handleResetReviews = () => setDataError('Review history is retained. Change an individual assessment instead. · የግምገማ ታሪክ ይቀመጣል። የእያንዳንዱን ግምገማ ያስተካክሉ።');
+  const handleAddRecord = async (data: AddRecordData) => {
+    if (!can('addEditRecord')) return;
+    await mutate(() => recordsApi.createRecord(data));
+    setAddModalOpen(false); resetFilters();
   };
-
-  const handleAddRecord = (formData: AddRecordData) => {
-    const approval = new Date(`${formData.approvalDate}T00:00:00`);
-    const payment = formData.paymentDate ? new Date(`${formData.paymentDate}T00:00:00`) : null;
-    const elapsedEnd = formData.status === "Paid" && payment ? payment : new Date();
-    const daysOpen = Math.max(0, Math.floor((elapsedEnd.getTime() - approval.getTime()) / 86_400_000));
-
-    let sequence = 2401;
-    while (records.some((record) => record.id === `SYN-ET-${sequence}`)) {
-      sequence += 1;
-    }
-    const newId = `SYN-ET-${sequence}`;
-
-    const newRecord: RecordItem = {
-      id: newId,
-      item: formData.item,
-      itemAm: formData.itemAm,
-      category: formData.category,
-      categoryAm: formData.categoryAm,
-      buyer: formData.buyer,
-      supplier: formData.supplier,
-      value: formData.value,
-      quantity: formData.quantity,
-      unit: formData.unit,
-      date: approval.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      status: formData.status,
-      statusAm: formData.statusAm,
-      daysOpen,
-      bids: formData.bids,
-      signals: [],
-    };
-
-    setRecords((current) => withComputedSignals([...current, newRecord], settings));
-    resetFilters();
-    setAddModalOpen(false);
-    setNewRecordId(newId);
-
-    window.setTimeout(() => {
-      setSuccessMessage(
-        fieldText(
-          "Synthetic sample record added — pending authorized human review.",
-          "የሙከራ መዝገብ ታክሏል — ፈቃድ ያለው የሰው ግምገማ በመጠበቅ ላይ።"
-        )
-      );
-      document.getElementById("records")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-
-    window.setTimeout(() => setSuccessMessage(""), 5000);
-    window.setTimeout(() => setNewRecordId(null), 3000);
+  const handleAddComparable = async (listing: ComparableListing) => {
+    if (!selected || !can('addVerifyComparable')) return;
+    await mutate(() => recordsApi.addComparable(selected, listing)); setGeminiGuidance(null);
   };
-
-  const handleAddComparable = (listing: ComparableListing) => {
-    if (!selected) return;
-    setComparablesByRecord((current) => ({
-      ...current,
-      [selected.id]: [...(current[selected.id] || []), listing],
-    }));
-    setGeminiGuidance(null);
-  };
-
-  const handleRemoveComparable = (id: string) => {
-    if (!selected) return;
-    setComparablesByRecord((current) => ({
-      ...current,
-      [selected.id]: (current[selected.id] || []).filter((l) => l.id !== id),
-    }));
-    setGeminiGuidance(null);
+  const handleRemoveComparable = async (id: string) => {
+    if (!selected || !can('addVerifyComparable')) return;
+    try { await mutate(() => recordsApi.removeComparable(selected, id)); setGeminiGuidance(null); } catch { /* error shown above */ }
   };
 
   const handleAskGemini = async () => {
-    if (!selected || geminiLoading) return;
+    if (!selected || geminiLoading || !can('requestGemini') || !isCurrentVerification(verification)) return;
     const comparables = comparablesByRecord[selected.id] || [];
     const recordQuantity = resolveRecordQuantity(selected.item, selected.quantity);
     const recordUnitPrice = recordQuantity ? selected.value / recordQuantity : null;
@@ -377,37 +314,55 @@ export default function App() {
     }
   };
 
-  const handleImportSession = (session: AuditSessionExport) => {
-    if (session.records && Array.isArray(session.records)) {
-      setRecords(withComputedSignals(session.records, settings));
-    }
-    if (session.comparablesByRecord && typeof session.comparablesByRecord === "object") {
-      setComparablesByRecord(session.comparablesByRecord);
-    }
+  const handleImportSession = async (session: AuditSessionExport) => {
+    if (!can('importSession')) throw new Error('Admin import only.');
+    await mutate(async () => {
+      const result = await recordsApi.importRecords(session);
+      setSuccessMessage(fieldText('Imported: ', 'የገቡ: ') + result.imported.length + fieldText(' · Existing IDs skipped unchanged: ', ' · ያሉ መዝገቦች አልተቀየሩም: ') + (result.skipped.join(', ') || '0'));
+    });
     resetFilters();
   };
-
-  const handleResetToDefaults = () => {
-    setRecords(initialRecords);
-    setComparablesByRecord(initialComparables);
-    localStorage.removeItem(STORAGE_KEY_RECORDS);
-    localStorage.removeItem(STORAGE_KEY_COMPARABLES);
-    resetFilters();
+  const importBrowser = async () => {
+    try { await handleImportSession({ version: '1.0', appName: 'Browser migration', exportedAt: new Date().toISOString(), records: loadSavedRecords(), comparablesByRecord: loadSavedComparables() }); } catch (error) { setDataError(error instanceof Error ? error.message : 'Import failed'); }
   };
 
   const selectedComparables = selected ? comparablesByRecord[selected.id] || [] : [];
+
+  if (isAuthenticated && (role === 'admin' || role === 'reviewer') && !verification) return (
+    <main className={`lang-${language}`}><section className="hero">
+      <h1><Dual en="Demo verification checkpoint" am="የማሳያ ማረጋገጫ" /></h1>
+      <p><Dual en="Complete the synthetic Fayda demo before entering the reviewer/admin workspace. This does not verify a real identity." am="ወደ ገምጋሚ/አስተዳዳሪ ቦታ ከመግባትዎ በፊት የፋይዳ ማሳያውን ያጠናቅቁ። እውነተኛ ማንነት አያረጋግጥም።" /></p>
+      <button onClick={() => openOnlyModal("fayda")}><Dual en="Open demo verification" am="የማሳያ ማረጋገጫ ክፈት" /></button>
+      <button onClick={logout}><Dual en="Log out" am="ውጣ" /></button>
+      {faydaModalOpen && <FaydaVerificationModal language={language} onClose={() => setFaydaModalOpen(false)} />}
+    </section></main>
+  );
 
   return isAuthenticated ? (
     <main className={`lang-${language}`}>
       <Topbar
         language={language}
         onLanguageChange={setLanguage}
-        onOpenExportModal={() => setExportModalOpen(true)}
-        onOpenSettingsModal={() => setSettingsModalOpen(true)}
-        onOpenFaydaModal={() => setFaydaModalOpen(true)}
-        onOpenVendorModal={() => setVendorModalOpen(true)}
+        onOpenExportModal={() => openOnlyModal("export")}
+        onOpenSettingsModal={() => { if (can('changeThresholds') && isCurrentVerification(verification)) openOnlyModal("settings"); }}
+        onOpenFaydaModal={() => openOnlyModal("fayda")}
+        onOpenVendorModal={() => openOnlyModal("vendor")}
       />
 
+      <section className="database-status collapsible-panel" aria-live="polite" id="database-tools">
+        <summary className="collapsible-header">
+          <span><Dual en="Shared database · refresh / import" am="የጋራ ዳታቤዝ · ማደስ / ማስገባ" separator="" /></span>
+          <span className="collapsible-icon">▼</span>
+        </summary>
+        <div className="collapsible-body">
+          <p><Dual en="Shared local database · refresh to see other users’ changes" am="የጋራ የአካባቢ ዳታቤዝ · የሌሎችን ለውጥ ለማየት ያድሱ" /></p>
+          <button disabled={busy} onClick={() => { void refresh().catch(() => setDataError('Refresh failed. · ማደስ አልተሳካም።')); }}><Dual en="Refresh records" am="መዝገቦችን አድስ" /></button>
+          {can('importSession') && <><p><Dual en="Import the existing browser copy (or starter samples). Duplicate IDs are skipped; nothing in the browser is erased." am="የአሳሹን ቅጂ (ወይም የመነሻ ናሙናዎችን) ያስገቡ። ተመሳሳይ መለያዎች ይዘለላሉ፤ የአሳሹ መረጃ አይሰረዝም።" /></p>
+          <button disabled={busy} onClick={() => void importBrowser()}><Dual en="Import browser copy / samples" am="የአሳሽ ቅጂ / ናሙናዎች አስገባ" /></button></>}
+          {dataError && <p role="alert">{dataError}</p>}
+          {successMessage && <p>{successMessage}</p>}
+        </div>
+      </section>
       <section className="hero" id="top">
         <div className="hero-content">
           <p className="eyebrow hero-label">
@@ -438,11 +393,11 @@ export default function App() {
 
       <SummaryMetrics records={records} />
 
-      <AuditDashboard
+      {can('requestGemini') && <AuditDashboard
         language={language}
         records={records}
-        onOpenFayda={() => setFaydaModalOpen(true)}
-      />
+        onOpenFayda={() => openOnlyModal("fayda")}
+      />}
 
       <RecordTable
         records={records}
@@ -460,7 +415,7 @@ export default function App() {
         onSignalFilterChange={setSignalFilter}
         onReviewFilterChange={setReviewFilter}
         onResetFilters={resetFilters}
-        onOpenAddModal={() => setAddModalOpen(true)}
+        onOpenAddModal={() => openOnlyModal("add")}
         onSelectRecord={openDetails}
         onResetReviews={handleResetReviews}
         canAddRecord={can('addEditRecord')}
@@ -540,11 +495,10 @@ export default function App() {
           language={language}
           onClose={() => setExportModalOpen(false)}
           onImportSession={handleImportSession}
-          onResetToDefaults={handleResetToDefaults}
         />
       )}
 
-      {settingsModalOpen && (
+      {settingsModalOpen && can('changeThresholds') && verification && (
         <ThresholdSettingsModal
           onClose={() => setSettingsModalOpen(false)}
         />
@@ -564,9 +518,13 @@ export default function App() {
         />
       )}
 
+      {editing && <EditRecordModal record={editing} onSaved={refresh} onClose={() => setEditing(null)} />}
       {selected && (
         <RecordDetailModal
           record={selected}
+          feedback={dataError}
+          onRefresh={() => { void refresh(true).catch(() => setDataError('Refresh failed. · ማደስ አልተሳካም።')); }}
+          onEdit={can('addEditRecord') && (role === 'admin' || selected.createdBy === user?.id) ? () => { setEditing(selected); setSelected(null); } : undefined}
           language={language}
           signalsMap={signals}
           comparables={selectedComparables}
@@ -577,7 +535,7 @@ export default function App() {
           onAddComparable={handleAddComparable}
           onRemoveComparable={handleRemoveComparable}
           onAskGemini={handleAskGemini}
-          onOpenFayda={() => setFaydaModalOpen(true)}
+          onOpenFayda={() => { setSelected(null); openOnlyModal("fayda"); }}
         />
       )}
     </main>

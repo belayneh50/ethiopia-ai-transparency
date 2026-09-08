@@ -7,6 +7,13 @@ export type Language = "both" | "am" | "en";
 
 export type RecordItem = {
   id: string;
+  databaseId?: string;
+  version?: number;
+  createdBy?: string;
+  reviewedBy?: string;
+  approvalDate?: string;
+  paymentDate?: string;
+  publicReviewSummary?: string;
   item: string;
   itemAm: string;
   category: string;

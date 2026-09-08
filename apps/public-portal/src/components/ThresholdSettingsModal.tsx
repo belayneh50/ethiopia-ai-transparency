@@ -1,22 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { ModalShell } from "./ModalShell";
+import { useAuth } from "../auth/AuthContext";
+import { isCurrentVerification } from "../faydaStorage";
+import { useFayda } from "../FaydaContext";
 import { useSettings } from "../SettingsContext";
-import { Dual } from "./Dual";
 
-export function ThresholdSettingsModal({ onClose }: { onClose: () => void }) {
+type Props = { onClose: () => void };
+
+export function ThresholdSettingsModal({ onClose }: Props) {
+  const { can } = useAuth();
+  const { verification } = useFayda();
   const { settings, updateSettings } = useSettings();
   const [price, setPrice] = useState(String(settings.price));
   const [repeatSupplier, setRepeatSupplier] = useState(String(settings.repeatSupplier));
   const [delay, setDelay] = useState(String(settings.delay));
 
   const save = () => {
-    updateSettings({
-      price: Number(price) || 0,
-      repeatSupplier: Number(repeatSupplier) || 0,
-      delay: Number(delay) || 0,
-    });
+    if (!can("changeThresholds") || !isCurrentVerification(verification)) return;
+    updateSettings({ price: Number(price) || 0, repeatSupplier: Number(repeatSupplier) || 0, delay: Number(delay) || 0 });
     onClose();
   };
-
   const resetDefaults = () => {
     setPrice(String(1_500_000));
     setRepeatSupplier(String(2));
@@ -24,36 +27,37 @@ export function ThresholdSettingsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal aria-label="Threshold settings">
-      <div className="modal">
-        <div className="modal-header">
-          <h2><Dual en="Threshold Settings" am="የገደብ ማደራጃ" /></h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <p className="modal-sub">
-          <Dual en="Adjust the demo thresholds used for signal detection." am="ለማሳያ ምልክት ስሌት የሚሰሩ የማሳያ ገደቦችን ያስተካክሉ።" />
-        </p>
+    <ModalShell open={true} onClose={onClose} titleEn="Threshold Settings" titleAm="የገደብ ማደራጃ" ariaLabel="Threshold settings">
+      <p className="text-[13px] text-[#2c5245] font-medium leading-relaxed mt-1">
+        Adjust the demo thresholds used for signal detection. · ለማሳያ ምልክት ስሌት የሚሰሩ የማሳያ ገደቦችን ያስተካክሉ።
+      </p>
 
-        <div className="form-grid">
-          <label>
-            <span><Dual en="Price threshold (ETB)" am="የዋጋ ገደብ (ብር)" /></span>
-            <input type="number" min="0" step="10000" value={price} onChange={(e) => setPrice(e.target.value)} />
-          </label>
-          <label>
-            <span><Dual en="Repeat supplier wins" am="ተደጋጋሚ አቅራቢ አሸናፊ" /></span>
-            <input type="number" min="2" step="1" value={repeatSupplier} onChange={(e) => setRepeatSupplier(e.target.value)} />
-          </label>
-          <label>
-            <span><Dual en="Delay threshold (days)" am="የመዘግየት ገደብ (ቀናት)" /></span>
-            <input type="number" min="1" step="1" value={delay} onChange={(e) => setDelay(e.target.value)} />
-          </label>
-        </div>
-
-        <div className="modal-actions">
-          <button className="secondary" type="button" onClick={resetDefaults}><Dual en="Reset defaults" am="ነባር ይመልሱ" /></button>
-          <button className="primary" type="button" onClick={save}><Dual en="Save thresholds" am="ገደቦችን ማሰር" /></button>
-        </div>
+      <div className="mt-5 grid gap-4">
+        <label className="block">
+          <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#173f35]">Price threshold (ETB) · የዋጋ ገደብ (ብር)</span>
+          <span className="block text-[10px] text-[#6b7a58] mb-1">Unit price comparison signal</span>
+          <input type="number" min="0" step="10000" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full rounded-lg border-2 border-[#d6cfa5] bg-[#fffdf8] px-4 py-3 text-[15px] text-[#173f35] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#e9c867] focus:border-[#c9a74d] transition" />
+        </label>
+        <label className="block">
+          <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#173f35]">Repeat supplier wins · ተደጋጋሚ አቅራቢ አሸናፊ</span>
+          <span className="block text-[10px] text-[#6b7a58] mb-1">Repetition signal count</span>
+          <input type="number" min="2" step="1" value={repeatSupplier} onChange={(e) => setRepeatSupplier(e.target.value)} className="w-full rounded-lg border-2 border-[#d6cfa5] bg-[#fffdf8] px-4 py-3 text-[15px] text-[#173f35] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#e9c867] focus:border-[#c9a74d] transition" />
+        </label>
+        <label className="block">
+          <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#173f35]">Delay threshold (days) · የመዘግየት ገደብ (ቀናት)</span>
+          <span className="block text-[10px] text-[#6b7a58] mb-1">Overdue approval or payment signal</span>
+          <input type="number" min="1" step="1" value={delay} onChange={(e) => setDelay(e.target.value)} className="w-full rounded-lg border-2 border-[#d6cfa5] bg-[#fffdf8] px-4 py-3 text-[15px] text-[#173f35] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#e9c867] focus:border-[#c9a74d] transition" />
+        </label>
       </div>
-    </div>
+
+      <div className="mt-6 flex gap-3 justify-end">
+        <button type="button" onClick={resetDefaults} className="rounded-lg px-5 py-2.5 text-[13px] font-bold bg-[#e8e4d0] text-[#5d6a55] border border-[#c9bfa0] shadow-sm hover:bg-[#dbcfa6] hover:border-[#bfa874] transition">
+          Reset defaults · ነባር ይመልሱ
+        </button>
+        <button type="button" onClick={save} className="rounded-lg px-6 py-2.5 text-[13px] font-extrabold bg-[#173f35] text-white shadow-md hover:opacity-95 transition">
+          Save thresholds · ገደቦችን ማሰር
+        </button>
+      </div>
+    </ModalShell>
   );
 }

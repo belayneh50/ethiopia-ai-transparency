@@ -55,14 +55,10 @@ export function ReviewSummaryBar({
         </button>
       )}
 
-      {records.some((record) => record.reviewStatus && record.reviewStatus !== "pending") && (
-        <button className="reset-reviews-btn" onClick={onResetReviews}>
-          <Dual en="Reset local reviews" am="የአካባቢ ግምገማዎችን አጽዳ" separator="" />
-        </button>
-      )}
+
 
       <span className="rsb-note">
-        ⓘ <Dual en="Local-only — this session's synthetic records." am="የአካባቢ ብቻ — በዚህ ክፍለ ጊዜ የተመዘገቡ የሙከራ መረጃዎች።" separator="" />
+        ⓘ <Dual en="Shared local database — synthetic records." am="የአካባቢ ብቻ — በዚህ ክፍለ ጊዜ የተመዘገቡ የሙከራ መረጃዎች።" separator="" />
       </span>
     </div>
   );

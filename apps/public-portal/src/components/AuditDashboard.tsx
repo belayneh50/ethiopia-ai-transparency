@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useAuth } from '../auth/AuthContext';
+import { isCurrentVerification } from '../faydaStorage';
+import { request, mapRecord } from '../recordsApi';
+import { useEffect, useRef, useState } from "react";
 import type { Language, RecordItem } from "../types";
 import { requestTransparencyAudit, createTransparencyAuditFallback, type TransparencyAuditInput } from "../services/geminiService";
 import { maskFin, useFayda } from "../FaydaContext";
@@ -136,24 +139,28 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
   const [running, setRunning] = useState(false);
   const [signedOffAt, setSignedOffAt] = useState<string | null>(null);
   const { verification } = useFayda();
+  const { can } = useAuth();
+  const [error, setError] = useState('');
+  const revision = useRef(0);
+  const [savedVersion, setSavedVersion] = useState<number>();
   const { showEn, showAm, text } = useText(language);
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
 
+  useEffect(() => { revision.current++; setResult(null); setSignedOffAt(null); setSavedVersion(undefined); }, [selected?.id, selected?.version]);
   const handleRun = async () => {
-    if (!selected || running) return;
+    if (!selected || running || !can('requestGemini') || !isCurrentVerification(verification)) return;
+    const current = ++revision.current;
+    setSignedOffAt(null); setError('');
     setRunning(true);
     setResult(null);
     try {
-      const audit = await requestTransparencyAudit(toAuditInput(selected, language));
+      const audit = await requestTransparencyAudit(toAuditInput(selected, "both"));
+      if (current !== revision.current) return;
       setResult(audit);
-      // A verified user signs off automatically at run time; an unverified one
-      // sees the gate CTA and can sign off later after verifying.
-      setSignedOffAt(verification ? new Date().toISOString() : null);
+      // Human sign-off is a separate explicit action after reading the result.
     } catch {
-      // 401/403 from the AI endpoint (stale session or role without access):
-      // surface the offline demo result instead of an unhandled rejection.
-      setResult(createTransparencyAuditFallback(toAuditInput(selected, language)));
+      setError('Access expired or unavailable. Sign in and verify the demo again. · እንደገና ይግቡና የማሳያ ማረጋገጫውን ያጠናቅቁ።');
     } finally {
       setRunning(false);
     }
@@ -241,6 +248,7 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
           </dl>
         )}
 
+        {error && <p role="alert">{error}</p>}
         {result && (
           <>
             <AuditResultView result={result} language={language} />
@@ -249,7 +257,13 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
               verification={verification}
               signedOffAt={signedOffAt}
               onOpenFayda={onOpenFayda}
-              onSignOffNow={() => setSignedOffAt(new Date().toISOString())}
+              onSignOffNow={async () => {
+                if (!selected?.databaseId || !can('performHumanReview') || !isCurrentVerification(verification) || signedOffAt) return;
+                try {
+                  const saved = await request<{ version: number; updatedAt: string }>(`/api/records/${selected.databaseId}/audit-signoff`, 'POST', { version: savedVersion ?? selected.version, report: result });
+                  setSavedVersion(saved.version); setSignedOffAt(saved.updatedAt);
+                } catch (e) { setError(e instanceof Error ? e.message : 'Sign-off failed'); }
+              }}
             />
           </>
         )}
