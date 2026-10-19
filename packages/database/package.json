@@ -14,7 +14,8 @@
     "generate": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^5.12.1"
+    "@prisma/client": "^5.12.1",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
     "prisma": "^5.12.1",

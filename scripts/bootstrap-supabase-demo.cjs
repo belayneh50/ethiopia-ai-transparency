@@ -18,6 +18,7 @@ async function main() {
   // DDL uses session pooling; the application's transaction-pool URL is unchanged.
   url.port = '5432';
   url.searchParams.delete('pgbouncer');
+  url.searchParams.set('schema', 'public');
   url.searchParams.set('connection_limit', '1');
   url.searchParams.set('sslmode', 'require');
   const root = path.resolve(__dirname, '..');
