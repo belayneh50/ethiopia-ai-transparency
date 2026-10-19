@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from './auth/AuthContext';
 import { mockFaydaAuthentication, type FaydaAuthenticationResult } from './services/faydaService';
-import { clearFaydaVerification, createFaydaVerification, isCurrentVerification, readFaydaVerification, saveFaydaVerification, type FaydaVerification } from './faydaStorage';
+import { clearFaydaVerification, createFaydaVerification, isCurrentVerification, readFaydaVerification, refreshFaydaActivity, saveFaydaVerification, type FaydaVerification } from './faydaStorage';
 export type FaydaContextValue = {
   verification: FaydaVerification | null;
   verify: (fin: string) => Promise<FaydaAuthenticationResult>;
@@ -26,6 +26,24 @@ export function FaydaProvider({ children }: { children: ReactNode }) {
     const timer = window.setTimeout(clearVerification, Math.max(0, Date.parse(verification.expiresAt) - Date.now()));
     return () => window.clearTimeout(timer);
   }, [stored, verification, clearVerification]);
+  useEffect(() => {
+    if (!verification) return;
+    let lastRefresh = 0;
+    const refreshActivity = () => {
+      const now = Date.now();
+      if (now - lastRefresh < 60_000) return;
+      lastRefresh = now;
+      setStored(current => {
+        if (!isCurrentVerification(current, now)) return current;
+        const next = refreshFaydaActivity(current, now);
+        saveFaydaVerification(window.sessionStorage, next);
+        return next;
+      });
+    };
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown'];
+    events.forEach(event => window.addEventListener(event, refreshActivity));
+    return () => events.forEach(event => window.removeEventListener(event, refreshActivity));
+  }, [verification]);
   const verify = useCallback(async (fin: string): Promise<FaydaAuthenticationResult> => {
     clearVerification();
     const request = generation.current;

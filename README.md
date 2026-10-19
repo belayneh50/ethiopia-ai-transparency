@@ -13,7 +13,7 @@ A bilingual Amharic–English **synthetic local procurement demonstration**. Hum
 
 **PostgreSQL is the source of truth for procurement records, reviews, and comparables.** The portal loads them after login and refreshes on window focus or with **Refresh records**. A save must be confirmed by the API. The portal no longer writes these records to localStorage or silently falls back to a private browser dataset when the database is unavailable.
 
-Browser storage still holds local threshold preferences and simulated vendor registrations. Authentication and the mock Fayda checkpoint use sessionStorage. These demo settings and vendor/bid simulations are not shared database entities.
+Browser storage still holds simulated vendor registrations. Authentication and the mock Fayda checkpoint use sessionStorage. Threshold settings are shared database entities; vendor/bid simulations are not.
 
 ## Setup and resuming this checkout
 
@@ -55,7 +55,7 @@ Backend `governor` maps to Recorder, and `public` maps to Viewer. JWT validation
 
 ## Preserve and migrate browser data
 
-1. Sign in as Admin and complete the synthetic Fayda checkpoint.
+1. Sign in as Admin. The workspace opens without an additional identity prompt.
 2. Choose **Import browser copy / samples**. It reads the original record/comparable storage keys; if no browser copy exists, it imports the starter sample dataset. The old browser copy is not changed or erased. Invalid snapshots produce an error rather than substituting data.
 3. The result lists imported and skipped IDs. **An existing record ID is skipped completely**, including its review and comparables. A duplicate never overwrites a newer database record. Review the retained original snapshot separately if it contains differences you want to reconcile.
 4. **Export & Import Audit Session** also accepts a saved JSON snapshot. Import is Admin-only, validated, and limited to 500 records and five comparables per record per file. Exports reflect the current user's permitted database view.
@@ -63,6 +63,8 @@ Backend `governor` maps to Recorder, and `public` maps to Viewer. JWT validation
 Import runs in a transaction. A failed batch does not leave partial records behind. Historical review statuses/notes/dates are preserved as imported data, with no newly claimed reviewer identity. The import event attributes the import to the signed-in Admin and marks historical assessments as unverified. Raw legacy identity fields are not stored as new sign-off evidence. Keep original files/browser copies until you have reviewed skipped IDs and verified the database contents. Browser data lost during the Windows reset cannot be reconstructed by this import feature.
 
 ## Shared updates and audit history
+
+Signal thresholds are shared PostgreSQL settings. Every authenticated role reads the same values; only Admin can update them. Each update and its before/after values are written atomically to the audit trail. The portal falls back to documented defaults only while the local API is unavailable and no longer stores threshold settings in the browser.
 
 Record creation/editing, review changes, comparable additions/removals, snapshot imports, and explicit report sign-offs write their corresponding audit events **in the same PostgreSQL transaction** as the change. If the event cannot be written, the change rolls back.
 
@@ -79,6 +81,8 @@ Keep the existing key. No replacement, rotation, deletion, or credential rewrite
 The backend uses `GEMINI_API_KEY` in the root `.env` (or the server process environment). `GEMINI_MODEL` optionally selects the model available to that key; otherwise the shared model default applies. Both browser flows call authenticated Nest endpoints:
 
 - `POST /api/v1/ai/audit` — structured workflow transparency assessment.
+- `GET /api/v1/settings/thresholds` — read the shared signal thresholds (all authenticated roles).
+- `PATCH /api/v1/settings/thresholds` — update shared thresholds (Admin only; writes an atomic audit event).
 - `POST /api/v1/ai/guidance` — neutral reviewer questions with manually supplied market references.
 
 The Vite dev/preview server only forwards `/api` to Nest. It no longer calls Gemini itself. The browser does not send an API key. An existing legacy `VITE_GEMINI_API_KEY` entry is left untouched and unused; Vite exposes only deliberately public `PUBLIC_` variables. Never move the provider request back into browser code.
@@ -97,7 +101,7 @@ The script uses the documented Admin demo login, sends at most one provider requ
 
 Fayda remains an explicitly labeled mock. Only the supplied synthetic success identifier is accepted; no real FIN should be entered. The service simulates failure cases and returns a clearly unsigned mock token. It does not contact NIDP, perform real biometric/OTP verification, or provide a compliant OIDC identity service.
 
-The portal requires the demo checkpoint for entry to the Admin/Reviewer workspace, Admin threshold changes, human-review/report sign-off, and simulated vendor registration/bid submission. Verification expires after twenty minutes and is tied to the signed-in demo user. Failed verification cannot retain an earlier successful vendor identity. Stored verification and new sign-off references use a synthetic subject reference rather than a raw FIN.
+The portal requests the demo checkpoint when a user saves a new or edited procurement record, changes Admin thresholds, signs off a human review/report, or uses simulated vendor registration/bid submission. It does not block normal login or browsing. A successful confirmation is reused while the user remains active; twenty minutes of inactivity or logout clears it without discarding an open form. The next sensitive save requests confirmation again. Failed verification cannot retain an earlier successful vendor identity. Stored verification and new sign-off references use a synthetic subject reference rather than a raw FIN.
 
 **The Fayda checkpoint is a browser demonstration, not server-side identity assurance.** Actual data authorization comes from the API's authenticated roles. An AI audit is not automatically signed off: an authorized reviewer must explicitly acknowledge the result. Vendor registration and bidding remain local simulations; identity verification alone would not establish ownership, exclude shell companies, or detect conflicts of interest.
 
@@ -126,5 +130,6 @@ Verified for this milestone:
 - Browser checks confirmed Admin login, the synthetic Fayda checkpoint and auto-close, centered shared modals, the wider Add Record form at desktop and mobile widths, the compact mobile menu at 319px and 390px, and audit-history Next/Previous behavior with correct boundary states.
 - Audit pagination was checked against an existing three-event record: page sizes were 2 and 1, all three event IDs were unique, and the database record filter remained unchanged.
 - One authenticated synthetic Gemini request completed through Nest using the existing key and `gemini-2.5-flash`. The structured bilingual result returned `source=gemini`; no database record was created and no key or token was printed or committed.
+- The shared-threshold API and portal integration compile, and the API unit suite (13 tests) and portal suite (65 tests) pass. Applying the additive table and running its database-backed RBAC test require PostgreSQL/Docker to be running.
 
 All data and identities in this repository are synthetic local-demo material. The application is not a production procurement system, live Fayda/NIDP integration, fraud detector, authorization substitute, or source of immutable/legal evidence. Production use would require managed secrets, hardened authentication, migrations and backups, tamper-evident audit retention, observability, security review, real identity-provider integration, and applicable Ethiopian legal and procurement controls.

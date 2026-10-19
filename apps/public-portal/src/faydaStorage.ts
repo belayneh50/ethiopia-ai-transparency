@@ -33,6 +33,7 @@ export function createFaydaVerification(
     fullName: minimalData.fullName,
     address: minimalData.address,
     verifiedAt: new Date(verifiedAtMs).toISOString(),
+    lastActiveAt: new Date(verifiedAtMs).toISOString(),
     expiresAt: new Date(verifiedAtMs + FAYDA_VERIFICATION_TTL_MS).toISOString(),
   };
 }
@@ -44,6 +45,7 @@ export type FaydaVerification = {
   fullName: string;
   address: string;
   verifiedAt: string;
+  lastActiveAt?: string;
 };
 
 export type VendorRegistration = {
@@ -97,7 +99,12 @@ export function isCurrentVerification(value: unknown, now = Date.now()): value i
     && typeof v.fullName === 'string' && typeof v.address === 'string'
     && typeof v.verifiedAt === 'string' && Number.isFinite(Date.parse(v.verifiedAt))
     && typeof v.expiresAt === 'string' && Date.parse(v.expiresAt) > now
-    && Date.parse(v.expiresAt) - Date.parse(v.verifiedAt) <= FAYDA_VERIFICATION_TTL_MS;
+    && Date.parse(v.expiresAt) - Date.parse(v.lastActiveAt || v.verifiedAt) <= FAYDA_VERIFICATION_TTL_MS;
+}
+
+/** Extend only the Fayda confirmation after meaningful activity; login remains unchanged. */
+export function refreshFaydaActivity(value: FaydaVerification, now = Date.now()): FaydaVerification {
+  return { ...value, lastActiveAt: new Date(now).toISOString(), expiresAt: new Date(now + FAYDA_VERIFICATION_TTL_MS).toISOString() };
 }
 
 /** Read the current session's verified identity (null when unverified). */

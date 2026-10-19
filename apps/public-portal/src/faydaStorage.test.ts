@@ -6,6 +6,7 @@ import {
   FAYDA_VERIFICATION_TTL_MS,
   isCurrentVerification,
   readFaydaVerification,
+  refreshFaydaActivity,
   readVendors,
   saveFaydaVerification,
   saveVendors,
@@ -61,6 +62,13 @@ describe("fayda verification storage", () => {
 
   it("uses the shared TTL constant — one owner of the verification lifetime", () => {
     expect(Date.parse(verification.expiresAt) - Date.parse(verification.verifiedAt)).toBe(FAYDA_VERIFICATION_TTL_MS);
+  });
+
+  it("extends Fayda confirmation from the latest activity without changing the original verification time", () => {
+    const now = Date.parse(verification.verifiedAt) + 60_000;
+    const refreshed = refreshFaydaActivity(verification, now);
+    expect(refreshed.verifiedAt).toBe(verification.verifiedAt);
+    expect(Date.parse(refreshed.expiresAt) - Date.parse(refreshed.lastActiveAt!)).toBe(FAYDA_VERIFICATION_TTL_MS);
   });
 
   it("treats an expired verification as absent and purges it", () => {

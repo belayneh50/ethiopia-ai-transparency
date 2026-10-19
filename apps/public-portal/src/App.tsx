@@ -17,6 +17,7 @@ import { ThresholdSettingsModal } from "./components/ThresholdSettingsModal";
 import { Dual } from "./components/Dual";
 import { ShieldNotice } from "./components/ShieldNotice";
 import { SettingsProvider, useSettings } from "./SettingsContext";
+import type { ThresholdSettings } from "./settings";
 import { useAuth } from "./auth/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { can, type Capability } from "./auth/roles";
@@ -132,7 +133,7 @@ export default function App() {
   const [geminiGuidance, setGeminiGuidance] = useState<GeminiReviewGuidance | null>(null);
   const [geminiLoading, setGeminiLoading] = useState(false);
 
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { isAuthenticated, token, user, logout, role, can } = useAuth();
   const { verification } = useFayda();
   // Re-check sessionStorage verification when storage/events change (so the demo checkpoint vanishes after Fayda verifies)
@@ -160,12 +161,39 @@ export default function App() {
     setFaydaModalOpen(modal === "fayda");
     setVendorModalOpen(modal === "vendor");
   };
+  const pendingFaydaAction = useRef<{
+    action: () => Promise<void>;
+    resolve: () => void;
+    reject: (error: Error) => void;
+  } | null>(null);
+  const confirmSensitiveSave = (action: () => Promise<void>) => {
+    if (isCurrentVerification(verification)) return action();
+    setFaydaModalOpen(true);
+    return new Promise<void>((resolve, reject) => {
+      pendingFaydaAction.current = { action, resolve, reject };
+    });
+  };
 
   const [dataError, setDataError] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<RecordItem | null>(null);
   const epoch = useRef(0);
   const mutationLock = useRef(false);
+  useEffect(() => {
+    if (!isCurrentVerification(verification) || !pendingFaydaAction.current) return;
+    const pending = pendingFaydaAction.current;
+    pendingFaydaAction.current = null;
+    void pending.action().then(pending.resolve).catch(error => {
+      pending.reject(error instanceof Error ? error : new Error('Save failed.'));
+    });
+  }, [verification]);
+  const closeFayda = () => {
+    if (pendingFaydaAction.current && !isCurrentVerification(verification)) {
+      pendingFaydaAction.current.reject(new Error('Fayda confirmation is required to save.'));
+      pendingFaydaAction.current = null;
+    }
+    setFaydaModalOpen(false);
+  };
   const refresh = useCallback(async (updateSelected = false) => {
     const generation = epoch.current;
     const result = await recordsApi.loadRecords(token);
@@ -254,8 +282,17 @@ export default function App() {
   const handleResetReviews = () => setDataError('Review history is retained. Change an individual assessment instead. · የግምገማ ታሪክ ይቀመጣል። የእያንዳንዱን ግምገማ ያስተካክሉ።');
   const handleAddRecord = async (data: AddRecordData) => {
     if (!can('addEditRecord')) return;
-    await mutate(() => recordsApi.createRecord(data));
-    setAddModalOpen(false); resetFilters();
+    await confirmSensitiveSave(async () => {
+      await mutate(() => recordsApi.createRecord(data));
+      setAddModalOpen(false); resetFilters();
+    });
+  };
+  const handleEditRecord = async (record: RecordItem, data: RecordItem) => {
+    if (!can('addEditRecord')) return;
+    await confirmSensitiveSave(async () => { await mutate(() => recordsApi.updateRecord(record, data)); });
+  };
+  const handleThresholdSave = async (next: ThresholdSettings) => {
+    await confirmSensitiveSave(async () => { await updateSettings(next); });
   };
   const handleAddComparable = async (listing: ComparableListing) => {
     if (!selected || !can('addVerifyComparable')) return;
@@ -328,23 +365,13 @@ export default function App() {
 
   const selectedComparables = selected ? comparablesByRecord[selected.id] || [] : [];
 
-  if (isAuthenticated && (role === 'admin' || role === 'reviewer') && !verification) return (
-    <main className={`lang-${language}`}><section className="hero">
-      <h1><Dual en="Demo verification checkpoint" am="የማሳያ ማረጋገጫ" /></h1>
-      <p><Dual en="Complete the synthetic Fayda demo before entering the reviewer/admin workspace. This does not verify a real identity." am="ወደ ገምጋሚ/አስተዳዳሪ ቦታ ከመግባትዎ በፊት የፋይዳ ማሳያውን ያጠናቅቁ። እውነተኛ ማንነት አያረጋግጥም።" /></p>
-      <button onClick={() => openOnlyModal("fayda")}><Dual en="Open demo verification" am="የማሳያ ማረጋገጫ ክፈት" /></button>
-      <button onClick={logout}><Dual en="Log out" am="ውጣ" /></button>
-      {faydaModalOpen && <FaydaVerificationModal language={language} onClose={() => setFaydaModalOpen(false)} />}
-    </section></main>
-  );
-
   return isAuthenticated ? (
     <main className={`lang-${language}`}>
       <Topbar
         language={language}
         onLanguageChange={setLanguage}
         onOpenExportModal={() => openOnlyModal("export")}
-        onOpenSettingsModal={() => { if (can('changeThresholds') && isCurrentVerification(verification)) openOnlyModal("settings"); }}
+        onOpenSettingsModal={() => { if (can('changeThresholds')) openOnlyModal("settings"); }}
         onOpenFaydaModal={() => openOnlyModal("fayda")}
         onOpenVendorModal={() => openOnlyModal("vendor")}
       />
@@ -498,16 +525,17 @@ export default function App() {
         />
       )}
 
-      {settingsModalOpen && can('changeThresholds') && verification && (
+      {settingsModalOpen && can('changeThresholds') && (
         <ThresholdSettingsModal
           onClose={() => setSettingsModalOpen(false)}
+          onSave={handleThresholdSave}
         />
       )}
 
       {faydaModalOpen && (
         <FaydaVerificationModal
           language={language}
-          onClose={() => setFaydaModalOpen(false)}
+          onClose={closeFayda}
         />
       )}
 
@@ -518,7 +546,7 @@ export default function App() {
         />
       )}
 
-      {editing && <EditRecordModal record={editing} onSaved={refresh} onClose={() => setEditing(null)} />}
+      {editing && <EditRecordModal record={editing} onSave={(data) => handleEditRecord(editing, data)} onClose={() => setEditing(null)} />}
       {selected && (
         <RecordDetailModal
           record={selected}

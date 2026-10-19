@@ -95,7 +95,7 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
           <button className="admin-btn" onClick={onOpenExportModal} title="Session data" aria-label="Session data export or import">
             <span aria-hidden="true">⚙</span><span>Session</span>
           </button>
-          <button className="admin-btn" disabled={!can('changeThresholds') || !verification} onClick={onOpenSettingsModal} title="Threshold settings" aria-label="Open threshold settings">
+          <button className="admin-btn" disabled={!can('changeThresholds')} onClick={onOpenSettingsModal} title="Threshold settings" aria-label="Open threshold settings">
             <span aria-hidden="true">◈</span><span>Thresholds</span>
           </button>
           <button className="admin-btn" onClick={onOpenFaydaModal} title={verification ? `Verified: ${verification.fullName}` : "Fayda demo verification"} aria-label="Fayda eKYC verification">
@@ -129,7 +129,7 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
         </nav>
         <div className="mobile-action-grid" aria-label="Administrative actions">
           <button onClick={() => runMobileAction(onOpenExportModal)}><span aria-hidden="true">⚙</span><Dual en="Session" am="ክፍለ ጊዜ" /></button>
-          <button disabled={!can('changeThresholds') || !verification} onClick={() => runMobileAction(onOpenSettingsModal)}><span aria-hidden="true">◈</span><Dual en="Thresholds" am="ገደቦች" /></button>
+          <button disabled={!can('changeThresholds')} onClick={() => runMobileAction(onOpenSettingsModal)}><span aria-hidden="true">◈</span><Dual en="Thresholds" am="ገደቦች" /></button>
           <button onClick={() => runMobileAction(onOpenFaydaModal)}><span aria-hidden="true">✓</span><Dual en="eKYC" am="ማረጋገጫ" /></button>
           <button onClick={() => runMobileAction(onOpenVendorModal)}><span aria-hidden="true">◆</span><Dual en="Vendor reg" am="አቅራቢ ምዝገባ" /></button>
         </div>

@@ -1,24 +1,33 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { DEFAULT_SETTINGS, type ThresholdSettings } from "./settings";
+import { apiFetch, useAuth } from "./auth/AuthContext";
 
 const SettingsContext = createContext<{
   settings: ThresholdSettings;
-  updateSettings: (newSettings: Partial<ThresholdSettings>) => void;
+  updateSettings: (newSettings: ThresholdSettings) => Promise<void>;
 } | null>(null);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<ThresholdSettings>(() => {
-    const saved = localStorage.getItem("thresholdSettings");
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
-  });
+  const { isAuthenticated } = useAuth();
+  const [settings, setSettings] = useState<ThresholdSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    localStorage.setItem("thresholdSettings", JSON.stringify(settings));
-  }, [settings]);
+    if (!isAuthenticated) return;
+    let active = true;
+    apiFetch('/api/settings/thresholds').then(async response => {
+      if (!response.ok) throw new Error('Unable to load thresholds');
+      const data = await response.json() as ThresholdSettings;
+      if (active) setSettings({ price: data.price, repeatSupplier: data.repeatSupplier, delay: data.delay });
+    }).catch(() => { /* Defaults remain available if the local API is offline. */ });
+    return () => { active = false; };
+  }, [isAuthenticated]);
 
-  const updateSettings = (newSettings: Partial<ThresholdSettings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
-  };
+  const updateSettings = useCallback(async (newSettings: ThresholdSettings) => {
+    const response = await apiFetch('/api/settings/thresholds', { method: 'PATCH', body: JSON.stringify(newSettings) });
+    if (!response.ok) throw new Error(response.status === 403 ? 'Only Admin can change thresholds' : 'Unable to save thresholds');
+    const data = await response.json() as ThresholdSettings;
+    setSettings({ price: data.price, repeatSupplier: data.repeatSupplier, delay: data.delay });
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, updateSettings }}>

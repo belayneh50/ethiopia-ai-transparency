@@ -1,24 +1,29 @@
 import { useState } from "react";
 import { ModalShell } from "./ModalShell";
 import { useAuth } from "../auth/AuthContext";
-import { isCurrentVerification } from "../faydaStorage";
-import { useFayda } from "../FaydaContext";
 import { useSettings } from "../SettingsContext";
 
-type Props = { onClose: () => void };
+type Props = { onClose: () => void; onSave: (settings: { price: number; repeatSupplier: number; delay: number }) => Promise<void> };
 
-export function ThresholdSettingsModal({ onClose }: Props) {
+export function ThresholdSettingsModal({ onClose, onSave }: Props) {
   const { can } = useAuth();
-  const { verification } = useFayda();
-  const { settings, updateSettings } = useSettings();
+  const { settings } = useSettings();
   const [price, setPrice] = useState(String(settings.price));
   const [repeatSupplier, setRepeatSupplier] = useState(String(settings.repeatSupplier));
   const [delay, setDelay] = useState(String(settings.delay));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const save = () => {
-    if (!can("changeThresholds") || !isCurrentVerification(verification)) return;
-    updateSettings({ price: Number(price) || 0, repeatSupplier: Number(repeatSupplier) || 0, delay: Number(delay) || 0 });
-    onClose();
+  const save = async () => {
+    if (!can("changeThresholds")) return;
+    setSaving(true); setError('');
+    try {
+      await onSave({ price: Number(price) || 0, repeatSupplier: Number(repeatSupplier) || 0, delay: Number(delay) || 0 });
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to save thresholds');
+      setSaving(false);
+    }
   };
   const resetDefaults = () => {
     setPrice(String(1_500_000));
@@ -51,11 +56,12 @@ export function ThresholdSettingsModal({ onClose }: Props) {
       </div>
 
       <div className="mt-6 flex gap-3 justify-end">
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <button type="button" onClick={resetDefaults} className="rounded-lg px-5 py-2.5 text-[13px] font-bold bg-[#e8e4d0] text-[#5d6a55] border border-[#c9bfa0] shadow-sm hover:bg-[#dbcfa6] hover:border-[#bfa874] transition">
           Reset defaults · ነባር ይመልሱ
         </button>
-        <button type="button" onClick={save} className="rounded-lg px-6 py-2.5 text-[13px] font-extrabold bg-[#173f35] text-white shadow-md hover:opacity-95 transition">
-          Save thresholds · ገደቦችን ማሰር
+        <button type="button" onClick={save} disabled={saving} className="rounded-lg px-6 py-2.5 text-[13px] font-extrabold bg-[#173f35] text-white shadow-md hover:opacity-95 transition disabled:opacity-60">
+          {saving ? 'Saving… · በማስቀመጥ ላይ…' : 'Save thresholds · ገደቦችን ማሰር'}
         </button>
       </div>
     </ModalShell>

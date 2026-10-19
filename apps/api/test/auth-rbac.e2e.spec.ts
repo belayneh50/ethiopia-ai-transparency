@@ -148,6 +148,7 @@ describe('Auth & RBAC contract (e2e)', () => {
       expect((await api('/records/missing/review', { token: t, ...R })).status).toBe(404);
       expect((await api('/records/missing/comparables', { token: t, ...R })).status).toBe(404);
       expect((await api('/reviews/record/missing/guidance', { token: t, ...R })).status).toBe(404);
+      expect((await api('/settings/thresholds', { token: t })).status).toBe(200);
     });
 
     it('viewer: read-only — records 200, everything sensitive 403', async () => {
@@ -157,6 +158,19 @@ describe('Auth & RBAC contract (e2e)', () => {
       expect((await api('/audit', { token: t })).status).toBe(403);
       expect((await api('/records/missing/review', { token: t, ...R })).status).toBe(403);
       expect((await api('/reviews/record/missing/guidance', { token: t, ...R })).status).toBe(403);
+      expect((await api('/settings/thresholds', { token: t })).status).toBe(200);
+      expect((await api('/settings/thresholds', { token: t, method: 'PATCH', body: { price: 1, repeatSupplier: 2, delay: 1 } })).status).toBe(403);
+    });
+
+    it('only Admin updates shared thresholds and creates an audit event', async () => {
+      const body = { price: 1_750_000, repeatSupplier: 3, delay: 45 };
+      const changed = await api('/settings/thresholds', { token: tokens.admin.token, method: 'PATCH', body });
+      expect(changed.status).toBe(200);
+      expect(changed.json).toMatchObject(body);
+      const read = await api('/settings/thresholds', { token: tokens.reviewer.token });
+      expect(read.json).toMatchObject(body);
+      const audit = await api('/audit?action=update', { token: tokens.admin.token });
+      expect(audit.json.data.some((event: any) => event.entityType === 'threshold_settings' && event.entityId === 'global')).toBe(true);
     });
 
     it('admin and recorder (governor) create records with 201 and the created record; viewer and reviewer get 403', async () => {

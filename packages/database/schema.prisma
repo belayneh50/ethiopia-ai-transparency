@@ -133,3 +133,16 @@ enum UserRole {
   governor
   admin
 }
+
+model ThresholdSettings {
+  id             String   @id @default("global")
+  price          Int      @default(1500000)
+  repeatSupplier Int      @default(2) @map("repeat_supplier")
+  delay          Int      @default(30)
+  version        Int      @default(1)
+  updatedBy      String?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("threshold_settings")
+}
