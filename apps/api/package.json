@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "prisma generate --schema ../../packages/database/schema.prisma && nest build",
+    "build": "tsc -p ../../packages/shared-types/tsconfig.json && prisma generate --schema ../../packages/database/schema.prisma && nest build",
     "start": "nest start",
     "start:prod": "node dist/main",
     "test": "jest",
