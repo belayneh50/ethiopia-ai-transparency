@@ -71,7 +71,7 @@ export function RecordDetailModal({
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section
-        className="modal"
+        className="modal record-detail-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="detail-title"
