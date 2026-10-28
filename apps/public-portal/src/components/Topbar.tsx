@@ -4,7 +4,24 @@ import { LogoutButton } from "./LogoutButton";
 import { RoleBadge } from "./RoleBadge";
 import { useAuth } from "../auth/AuthContext";
 import { maskFin, useFayda } from "../FaydaContext";
+import { useTheme } from "../theme";
 import type { Language } from "../types";
+
+/** Moon/sun toggle shared by the desktop actions row and the mobile menu. */
+export function ThemeToggleButton() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      type="button"
+      className="theme-toggle"
+      onClick={toggleTheme}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+    </button>
+  );
+}
 
 type TopbarProps = {
   language: Language;
@@ -18,6 +35,7 @@ type TopbarProps = {
 export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSettingsModal, onOpenFaydaModal, onOpenVendorModal }: TopbarProps) {
   const { can, role } = useAuth();
   const { verification } = useFayda();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -90,6 +108,8 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
           <Dual en="SYNTHETIC DATA ONLY" am="ሰው ሰራሽ መረጃ ብቻ" separator="" />
         </span>
 
+        <ThemeToggleButton />
+
         {/* Compact admin toolbar: grouped secondary actions */}
         <div className="admin-toolbar" aria-label="Administrative actions">
           <button className="admin-btn" onClick={onOpenExportModal} title="Session data" aria-label="Session data export or import">
@@ -132,6 +152,7 @@ export function Topbar({ language, onLanguageChange, onOpenExportModal, onOpenSe
           <button disabled={!can('changeThresholds')} onClick={() => runMobileAction(onOpenSettingsModal)}><span aria-hidden="true">◈</span><Dual en="Thresholds" am="ገደቦች" /></button>
           <button onClick={() => runMobileAction(onOpenFaydaModal)}><span aria-hidden="true">✓</span><Dual en="eKYC" am="ማረጋገጫ" /></button>
           <button onClick={() => runMobileAction(onOpenVendorModal)}><span aria-hidden="true">◆</span><Dual en="Vendor reg" am="አቅራቢ ምዝገባ" /></button>
+          <button onClick={() => runMobileAction(toggleTheme)}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><Dual en={theme === "dark" ? "Light mode" : "Dark mode"} am={theme === "dark" ? "የቀን ሁኔታ" : "የሌሊት ሁኔታ"} /></button>
         </div>
         <div className="mobile-menu-footer">
           <div className="language" aria-label="Language selector">

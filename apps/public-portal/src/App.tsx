@@ -376,20 +376,20 @@ export default function App() {
         onOpenVendorModal={() => openOnlyModal("vendor")}
       />
 
-      <section className="database-status collapsible-panel" aria-live="polite" id="database-tools">
+      <details className="database-status collapsible-panel" aria-live="polite" id="database-tools">
         <summary className="collapsible-header">
-          <span><Dual en="Shared database · refresh / import" am="የጋራ ዳታቤዝ · ማደስ / ማስገባ" separator="" /></span>
-          <span className="collapsible-icon">▼</span>
+          <span><Dual en="Shared database · refresh / import" am="የጋራ ዳታቤዝ_ማደሺያ/ማስገቢያ" separator="" /></span>
+          <span className="collapsible-icon" aria-hidden="true">▼</span>
         </summary>
         <div className="collapsible-body">
           <p><Dual en="Shared local database · refresh to see other users’ changes" am="የጋራ የአካባቢ ዳታቤዝ · የሌሎችን ለውጥ ለማየት ያድሱ" /></p>
-          <button disabled={busy} onClick={() => { void refresh().catch(() => setDataError('Refresh failed. · ማደስ አልተሳካም።')); }}><Dual en="Refresh records" am="መዝገቦችን አድስ" /></button>
+          <button disabled={busy} onClick={() => { void refresh().catch(() => setDataError('Refresh failed. · ማደሱ አልተሳካም።')); }}><Dual en="Refresh records" am="መዝገቦችን እንደገና ጫን" /></button>
           {can('importSession') && <><p><Dual en="Import the existing browser copy (or starter samples). Duplicate IDs are skipped; nothing in the browser is erased." am="የአሳሹን ቅጂ (ወይም የመነሻ ናሙናዎችን) ያስገቡ። ተመሳሳይ መለያዎች ይዘለላሉ፤ የአሳሹ መረጃ አይሰረዝም።" /></p>
           <button disabled={busy} onClick={() => void importBrowser()}><Dual en="Import browser copy / samples" am="የአሳሽ ቅጂ / ናሙናዎች አስገባ" /></button></>}
           {dataError && <p role="alert">{dataError}</p>}
           {successMessage && <p>{successMessage}</p>}
         </div>
-      </section>
+      </details>
       <section className="hero" id="top">
         <div className="hero-content">
           <p className="eyebrow hero-label">

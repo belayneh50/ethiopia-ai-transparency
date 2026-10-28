@@ -222,7 +222,7 @@ export function RecordDetailModal({
           )}
         </div>
 
-        {onEdit && <button onClick={onEdit}><Dual en="Edit record" am="መዝገብ አስተካክል" /></button>}
+        {onEdit && <button onClick={onEdit}><Dual en="Edit record" am="መዝገቡን አርትዕ" /></button>}
         {can('viewInternalNotes') && record.databaseId && <AuditHistory recordId={record.databaseId} revision={record.version} />}
         {showMemo && (
           <AuditMemoReport

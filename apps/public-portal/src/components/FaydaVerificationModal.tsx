@@ -38,10 +38,10 @@ export function faydaErrorMessage(code: FaydaAuthFailureCode): { en: string; am:
 }
 
 const FAILURE_STYLES: Record<FaydaAuthFailureCode, string> = {
-  invalid_fin: "border-amber-200 bg-amber-50 text-amber-800",
-  fin_not_found: "border-red-200 bg-red-50 text-red-800",
-  nidp_unavailable: "border-slate-200 bg-slate-50 text-slate-700",
-  demo_only: "border-slate-200 bg-slate-50 text-slate-700",
+  invalid_fin: "border-warning-line bg-warning-soft text-warning",
+  fin_not_found: "border-danger-line bg-danger-soft text-danger",
+  nidp_unavailable: "border-line-soft bg-surface-alt text-soft",
+  demo_only: "border-line-soft bg-surface-alt text-soft",
 };
 
 type OutcomeProps = { language: Language; result: FaydaAuthenticationResult };
@@ -58,15 +58,15 @@ export function FaydaOutcome({ language, result }: OutcomeProps) {
     );
   }
   return (
-    <div role="status" className="mt-5 rounded-xl border-2 border-emerald-200 bg-emerald-50/40 px-5 py-4 shadow-inner">
-      <p className="flex items-center gap-2 text-[15px] font-extrabold text-emerald-800 tracking-tight">
-        <span aria-hidden="true" className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-bold">✓</span>
+    <div role="status" className="mt-5 rounded-xl border-2 border-success-line bg-success-soft/40 px-5 py-4 shadow-inner">
+      <p className="flex items-center gap-2 text-[15px] font-extrabold text-success tracking-tight">
+        <span aria-hidden="true" className="inline-grid place-items-center w-6 h-6 rounded-full bg-success text-page text-[11px] font-bold">✓</span>
         <span>{text("successTitle")}</span>
       </p>
-      <dl className="mt-3 space-y-1.5 text-[13px] text-[#2a5244]">
-        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("fullName")}:</dt><dd className="text-[#2c5245]">{result.minimalData.fullName}</dd></div>
-        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("address")}:</dt><dd className="text-[#2c5245]">{result.minimalData.address}</dd></div>
-        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-[#173f35]">{text("biometric")}:</dt><dd className="text-[#2c5245]">{text("biometricOk")} ✓</dd></div>
+      <dl className="mt-3 space-y-1.5 text-[13px] text-success">
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-brand-text">{text("fullName")}:</dt><dd className="text-success dark:text-soft">{result.minimalData.fullName}</dd></div>
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-brand-text">{text("address")}:</dt><dd className="text-success dark:text-soft">{result.minimalData.address}</dd></div>
+        <div className="flex gap-3"><dt className="font-extrabold min-w-[88px] text-brand-text">{text("biometric")}:</dt><dd className="text-success dark:text-soft">{text("biometricOk")} ✓</dd></div>
       </dl>
     </div>
   );
@@ -101,14 +101,14 @@ export function FaydaVerificationModal({ language, onClose }: Props) {
   return (
     <ModalShell open={true} onClose={onClose} titleEn={COPY.title.en} titleAm={COPY.title.am} ariaLabel={text("title")}>
       {/* Subtitle more readable */}
-      <p className="text-[13px] text-[#2c5245] font-medium leading-relaxed mt-1">
+      <p className="text-[13px] text-success dark:text-soft font-medium leading-relaxed mt-1">
         {showEn && COPY.subtitle.en}{showEn && showAm && <br />}{showAm && COPY.subtitle.am}
       </p>
 
       {/* Label above input (English first, Amharic slightly smaller beneath) */}
       <label className="mt-5 block">
-        <span className="block text-[11px] font-extrabold uppercase tracking-[0.1em] text-[#173f35]">{text("fin")}</span>
-        <span className="block text-[10px] text-[#6b7a58] font-medium mb-1">{showAm ? COPY.subtitle.am : "12-digit synthetic demonstration number"}</span>
+        <span className="block text-[11px] font-extrabold uppercase tracking-[0.1em] text-brand-text">{text("fin")}</span>
+        <span className="block text-[10px] text-soft font-medium mb-1">{showAm ? COPY.subtitle.am : "12-digit synthetic demonstration number"}</span>
         <input
           type="text"
           inputMode="numeric"
@@ -117,7 +117,7 @@ export function FaydaVerificationModal({ language, onClose }: Props) {
           value={fin}
           onChange={(e) => { setFin(e.target.value.replace(/\D/g, "").slice(0, 12)); setResult(null); }}
           placeholder={COPY.placeholder.en}
-          className="w-full rounded-lg border-2 border-[#d6cfa5] bg-[#fffdf8] px-4 py-3 text-[15px] text-[#173f35] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#e9c867] focus:border-[#c9a74d] transition"
+          className="w-full rounded-lg border-2 border-gold-border dark:border-line-strong bg-surface-warm dark:bg-surface-warm px-4 py-3 text-[15px] text-brand-text shadow-inner focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold-border transition"
         />
       </label>
 
@@ -127,22 +127,22 @@ export function FaydaVerificationModal({ language, onClose }: Props) {
           type="button"
           onClick={handleVerify}
           disabled={loading || fin.length < 1}
-          className="flex-1 rounded-lg bg-[#173f35] px-5 py-2.5 text-[13px] font-extrabold text-white shadow-md hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="flex-1 rounded-lg bg-brand px-5 py-2.5 text-[13px] font-extrabold text-white shadow-md hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           {loading ? text("verifying") : text("verify")}
         </button>
       </div>
 
       {/* Demo hints */}
-      <p className="mt-3 text-[12px] text-[#556b4a] font-medium">
-        {text("tryThese")} <span className="block text-[11px] text-[#3a5c3a]">{FAYDA_DEMO_VERIFIED_FIN} ({text("verified")}) · 991234567890 ({text("notRegistered")}) · 000000000000 ({text("outage")})</span>
+      <p className="mt-3 text-[12px] text-soft font-medium">
+        {text("tryThese")} <span className="block text-[11px] text-success">{FAYDA_DEMO_VERIFIED_FIN} ({text("verified")}) · 991234567890 ({text("notRegistered")}) · 000000000000 ({text("outage")})</span>
       </p>
 
       {/* Result / error shown clearly */}
       {result && <FaydaOutcome language={language} result={result} />}
 
       {/* Disclaimer - larger and readable */}
-      <p className="mt-4 border-t border-[#d6cfa5] pt-3 text-[12px] text-[#556b4a] font-medium leading-relaxed">{text("honest")}</p>
+      <p className="mt-4 border-t border-gold-border dark:border-line-strong pt-3 text-[12px] text-soft font-medium leading-relaxed">{text("honest")}</p>
 
       {(() => {
         // Footer actions passed as footer prop so ModalShell aligns consistently

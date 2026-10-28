@@ -22,7 +22,7 @@ const COPY: Record<string, { en: string; am: string }> = {
     am: "የአንድ መዝገብ የተዋቀረ የግልጽነት ግምገማ ያካሂዱ። ነጥቡ ሂደቱ ከመስኮቹ ምን ያህል እንደሚታይ ያንጸባርቃል — ማሳያ እንጂ ውሳኔ አይደለም።",
   },
   recordLabel: { en: "Record", am: "መዝገብ" },
-  run: { en: "Run AI audit", am: "AI ኦዲት አሂድ" },
+  run: { en: "Run AI audit", am: "በA.I ኦዲት አካሂድ" },
   running: { en: "Analysing…", am: "በመተንተን ላይ…" },
   empty: { en: "No records to audit.", am: "የሚመረመር መዝገብ የለም።" },
   fieldBuyer: { en: "Buyer", am: "ገዢ" },
@@ -90,9 +90,9 @@ export function AuditSignOff({ language, verification, signedOffAt, onOpenFayda,
     return (
       <div
         role="status"
-        className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-900"
+        className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-success-line bg-success-soft px-4 py-3 text-[13px] text-success"
       >
-        <span aria-hidden="true" className="text-[15px] font-bold text-emerald-700">✒</span>
+        <span aria-hidden="true" className="text-[15px] font-bold text-success">✒</span>
         <span className="font-bold">{text("signedOffBy")}</span>
         <span>
           {verification.fullName} ({maskFin(verification.subjectId)}) {text("signedOffOn")} {fmtDate(signedOffAt)}
@@ -107,7 +107,7 @@ export function AuditSignOff({ language, verification, signedOffAt, onOpenFayda,
         <button
           type="button"
           onClick={onSignOffNow}
-          className="rounded-md border border-[#173f35] px-3 py-1.5 text-[12px] font-bold text-[#173f35] hover:bg-[#173f35] hover:text-white"
+          className="rounded-md border border-brand bg-surface px-3 py-1.5 text-[12px] font-bold text-brand-text hover:bg-brand hover:text-white"
         >
           {text("signOffNow")}
         </button>
@@ -117,7 +117,7 @@ export function AuditSignOff({ language, verification, signedOffAt, onOpenFayda,
 
   return (
     <div
-      className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900"
+      className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-warning-line bg-warning-soft px-4 py-3 text-[13px] text-warning"
       role="status"
     >
       <span aria-hidden="true">⚠</span>
@@ -125,7 +125,7 @@ export function AuditSignOff({ language, verification, signedOffAt, onOpenFayda,
       <button
         type="button"
         onClick={onOpenFayda}
-        className="rounded-md bg-[#173f35] px-3 py-1.5 text-[12px] font-bold text-white hover:opacity-90"
+        className="rounded-md bg-brand px-3 py-1.5 text-[12px] font-bold text-white hover:opacity-90"
       >
         {text("verifyCta")}
       </button>
@@ -170,32 +170,32 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
 
   if (records.length === 0) {
     return (
-      <section id="ai-audit" aria-label={text("heading")} className="ai-audit bg-white py-10">
-        <div className="mx-auto max-w-[1100px] px-6 text-[14px] text-[#5e6d68]">{text("empty")}</div>
+      <section id="ai-audit" aria-label={text("heading")} className="ai-audit bg-white dark:bg-page py-10">
+        <div className="mx-auto max-w-[1100px] px-6 text-[14px] text-soft dark:text-soft">{text("empty")}</div>
       </section>
     );
   }
 
   return (
-    <section id="ai-audit" aria-label={text("heading")} className="ai-audit border-y border-[#e0e3dd] bg-white py-10">
+    <section id="ai-audit" aria-label={text("heading")} className="ai-audit border-y border-line-soft dark:border-line-strong bg-white dark:bg-page py-10">
       <div className="mx-auto max-w-[1100px] px-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#6d527f]">{text("eyebrow")}</p>
-        <h2 className="mt-1 text-[22px] font-bold text-[#173f35]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-purple">{text("eyebrow")}</p>
+        <h2 className="mt-1 text-[22px] font-bold text-brand-text">
           {showEn && <span>{COPY.heading.en}</span>}
-          {showEn && showAm && <span className="text-[#6d527f]"> · </span>}
+          {showEn && showAm && <span className="text-purple"> · </span>}
           {showAm && <span className={showEn ? "font-normal" : ""}>{COPY.heading.am}</span>}
         </h2>
-        <p className="mt-2 max-w-[760px] text-[13px] leading-relaxed text-[#5e6d68]">
+        <p className="mt-2 max-w-[760px] text-[13px] leading-relaxed text-soft dark:text-soft">
           {showEn && COPY.intro.en}
           {showEn && showAm && <br />}
           {showAm && COPY.intro.am}
         </p>
 
         <div className="mt-5 flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#5e6d68]">
+          <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-[0.08em] text-soft dark:text-soft">
             {text("recordLabel")}
             <select
-              className="mt-1 min-w-[280px] rounded-md border border-[#c9d3cd] bg-white px-3 py-2 text-[13px] font-normal normal-case tracking-normal text-[#173f35]"
+              className="mt-1 min-w-[280px] rounded-md border border-line-strong bg-white dark:bg-surface-warm px-3 py-2 text-[13px] font-normal normal-case tracking-normal text-brand-text dark:text-main"
               value={selected?.id ?? ""}
               onChange={(event) => {
                 setSelectedId(event.target.value);
@@ -215,22 +215,22 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
             type="button"
             onClick={handleRun}
             disabled={running}
-            className="rounded-md bg-[#173f35] px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
+            className="rounded-md bg-brand px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
           >
             {running ? text("running") : text("run")}
           </button>
 
           {verification ? (
-            <p className="text-[11px] text-[#2f6f4f]">
+            <p className="text-[11px] text-success">
               ✓ {text("signOffIdentity")}: {verification.fullName} ({maskFin(verification.subjectId)})
             </p>
           ) : (
-            <p className="flex flex-wrap items-center gap-2 text-[11px] text-[#8a6d1a]">
+            <p className="flex flex-wrap items-center gap-2 text-[11px] text-gold-text">
               <span>⚠ {text("signOffGated")}</span>
               <button
                 type="button"
                 onClick={onOpenFayda}
-                className="rounded-md border border-[#b98a2b] px-2 py-1 text-[11px] font-bold text-[#8a6d1a] hover:bg-[#b98a2b] hover:text-white"
+                className="rounded-md border border-gold-border bg-surface px-2 py-1 text-[11px] font-bold text-gold-text hover:bg-gold-border hover:text-white"
               >
                 {text("verifyCta")}
               </button>
@@ -239,12 +239,12 @@ export function AuditDashboard({ language, records, onOpenFayda }: AuditDashboar
         </div>
 
         {selected && (
-          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-[#5e6d68]">
-            <div className="flex gap-1"><dt className="font-bold text-[#173f35]">{text("fieldBuyer")}:</dt><dd>{selected.buyer}</dd></div>
-            <div className="flex gap-1"><dt className="font-bold text-[#173f35]">{text("fieldSupplier")}:</dt><dd>{selected.supplier}</dd></div>
-            <div className="flex gap-1"><dt className="font-bold text-[#173f35]">{text("fieldValue")}:</dt><dd>{valueLabel(selected.value)}</dd></div>
-            <div className="flex gap-1"><dt className="font-bold text-[#173f35]">{text("fieldBids")}:</dt><dd>{selected.bids}</dd></div>
-            <div className="flex gap-1"><dt className="font-bold text-[#173f35]">{text("fieldOpen")}:</dt><dd>{selected.daysOpen}</dd></div>
+          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-soft dark:text-soft">
+            <div className="flex gap-1"><dt className="font-bold text-brand-text">{text("fieldBuyer")}:</dt><dd>{selected.buyer}</dd></div>
+            <div className="flex gap-1"><dt className="font-bold text-brand-text">{text("fieldSupplier")}:</dt><dd>{selected.supplier}</dd></div>
+            <div className="flex gap-1"><dt className="font-bold text-brand-text">{text("fieldValue")}:</dt><dd>{valueLabel(selected.value)}</dd></div>
+            <div className="flex gap-1"><dt className="font-bold text-brand-text">{text("fieldBids")}:</dt><dd>{selected.bids}</dd></div>
+            <div className="flex gap-1"><dt className="font-bold text-brand-text">{text("fieldOpen")}:</dt><dd>{selected.daysOpen}</dd></div>
           </dl>
         )}
 

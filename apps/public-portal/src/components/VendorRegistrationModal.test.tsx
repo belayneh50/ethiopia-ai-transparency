@@ -40,7 +40,7 @@ describe("VendorRegistrationModal", () => {
     expect(html).toContain("Step 1 — Verify the representative");
     expect(html).toContain("Verify with Fayda");
     // Company field and register action are disabled until the identity is verified.
-    expect(html).toContain("disabled:bg-[#f2f3f0]"); // the disabled styling is on the company input only
+    expect(html).toContain("disabled:bg-surface-alt"); // the disabled styling is on the company input only
     expect(html).toContain('disabled=""');
     expect(html).toContain("Register vendor");
     expect(html).toContain("Simulated only — no real NIDP check, credential, or bid is produced");

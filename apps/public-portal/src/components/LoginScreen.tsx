@@ -1,9 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { DEMO_ACCOUNTS } from '../auth/demoAccounts';
+import { useTheme } from '../theme';
 import type { Language } from '../types';
 import { Dual } from './Dual';
 import { PasswordField } from './PasswordField';
+
+/** Floating moon/sun toggle so the theme is reachable before signing in. */
+function LoginThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      type="button"
+      className="login-theme-toggle"
+      onClick={toggleTheme}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+    </button>
+  );
+}
 
 type LoginScreenProps = {
   language: Language;
@@ -48,6 +65,7 @@ export function LoginScreen({ language, onLanguageChange }: LoginScreenProps) {
 
   return (
     <main className={`login-screen lang-${language}`} id="login-top">
+      <LoginThemeToggle />
       <div className="login-card" role="region" aria-labelledby="login-heading">
         <p className="login-notice" role="note">
           <strong>

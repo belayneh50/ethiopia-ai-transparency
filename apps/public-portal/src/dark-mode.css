@@ -1,0 +1,64 @@
+/* ===== Dark mode =====
+   Imported at the top of styles.css, immediately after the webfont import so
+   these overrides win over the base rules below them.
+
+   Token-driven first: styles.css defines every semantic token in :root and
+   flips it inside .dark, so a rule written against --bg-page / --surface /
+   --text-* / --c-* already works in both themes with no help from this file.
+   What remains here is only what a token cannot express:
+
+     1. lit surfaces whose dark value is a gradient or a heavier shadow,
+     2. controls that step one surface lighter in the dark palette,
+     3. second-level text that steps down one more shade,
+     4. accents that must read as the brighter mint on dark surfaces.
+
+   The printable audit memorandum is deliberately absent: its paper stays white
+   in both themes, so nothing inside it may be overridden here. */
+
+.dark body { background: var(--bg-page); color: var(--text-main); }
+
+/* Shadows, plus the one border that wants an olive-gold rather than the
+   light-theme modal gold, stay outside the token scale. */
+.dark .modal { border-color: #4a5c3d; }
+.dark .summary { box-shadow: 0 14px 45px rgba(0,0,0,.4); }
+.dark .login-card { box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+
+/* Form controls sit one surface step lighter than their card so they stay
+   legible against it in the dark palette. */
+.dark .filterbar input, .dark .filterbar select, .dark .human-review-section select, .dark .human-review-section textarea, .dark .comparable-form input,
+.dark .form-field input, .dark .form-field select { background: var(--surface-warm); border-color: var(--border-strong); color: var(--text-main); }
+.dark .search { background: var(--surface-warm); border-color: var(--border-strong); }
+
+/* Second-level text steps down one shade to keep the dark palette calm. */
+.dark .summary small,
+.dark .search span,
+.dark .empty,
+.dark .hint,
+.dark .section-title h2 span,
+.dark .section-title-actions p,
+.dark .signal-cards header small,
+.dark .signal-cards h3 span,
+.dark .explanations h3 span,
+.dark .detail-grid small,
+.dark .modal>h2 span,
+.dark .modal-tabs button,
+.dark .market-card-label,
+.dark .market-summary .formula,
+.dark .human-review-section label,
+.dark .review-summary small,
+.dark .review-summary-label,
+.dark .timeline-header .eyebrow,
+.dark td small,
+.dark td .am { color: var(--text-faint); }
+.dark th { background: var(--surface-alt); color: var(--text-faint); border-bottom-color: var(--border-soft); }
+
+/* Active/selected states: the light-theme tokens are too loud in dark. */
+.dark .modal-tabs button.active { background: var(--surface); color: var(--text-main); }
+.dark .review-summary-bar .rsb-clickable.active { background: var(--surface-alt); }
+
+/* Accents that read better as the brighter mint on dark surfaces. */
+.dark .timeline-header h3 { color: var(--text-main); }
+.dark .benchmark-footer-note .info-icon { color: var(--c-success); }
+
+/* The printable memo keeps its paper look in dark mode; soften its cast shadow. */
+.dark .audit-memo-document { box-shadow: 0 10px 40px rgba(0,0,0,.6); }

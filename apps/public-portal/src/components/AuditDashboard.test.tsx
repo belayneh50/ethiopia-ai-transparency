@@ -78,7 +78,7 @@ describe("AuditDashboard", () => {
 
   it("renders the Amharic copy when the language is Amharic", () => {
     const html = wrap(null, <AuditDashboard language="am" records={[record]} onOpenFayda={() => undefined} />);
-    expect(html).toContain("AI ኦዲት አሂድ");
+    expect(html).toContain("በA.I ኦዲት አካሂድ");
     expect(html).toContain("መዝገብ");
   });
 

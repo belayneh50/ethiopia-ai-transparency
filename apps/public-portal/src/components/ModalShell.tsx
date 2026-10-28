@@ -66,7 +66,7 @@ export function ModalShell({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-full max-w-[460px] md:max-w-[520px] rounded-[18px] border-[2.5px] border-[#e0d4a3] bg-gradient-to-b from-[#fffdf8] to-[#f6f4ee] shadow-[0_40px_100px_rgba(10,31,26,0.32),0_16px_32px_rgba(10,31,26,0.14),inset_0_0_0_1px_rgba(255,255,255,0.7)] overflow-y-auto max-h-[90vh] px-6 py-8 md:px-10 md:py-10"
+        className="relative w-full max-w-[460px] md:max-w-[520px] rounded-[18px] border-[2.5px] border-gold-border bg-gradient-to-b from-surface-warm to-surface-alt shadow-[0_40px_100px_rgba(10,31,26,0.32),0_16px_32px_rgba(10,31,26,0.14),inset_0_0_0_1px_rgba(255,255,255,0.7)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.55)] overflow-y-auto max-h-[90vh] px-6 py-8 md:px-10 md:py-10 text-main"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -74,14 +74,14 @@ export function ModalShell({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full border-2 border-[#d6cfa5] bg-[#fdfcf8] text-[#68746f] shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:bg-[#e9c867] hover:text-[#1b3c22] hover:border-[#c9a74d] transition duration-150 grid place-items-center text-[16px] font-bold focus:outline-2 focus:outline-[#e9c867] focus:outline-offset-2 cursor-pointer"
+          className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full border-2 border-gold-border dark:border-line-strong bg-surface-warm text-soft shadow-[0_2px_6px_rgba(0,0,0,0.1)] hover:bg-gold hover:text-[#1b3c22] hover:border-gold-border transition duration-150 grid place-items-center text-[16px] font-bold focus:outline-2 focus:outline-gold focus:outline-offset-2 cursor-pointer"
         >
           ✕
         </button>
 
-        <h2 className="text-[19px] font-extrabold text-[#173f35] leading-snug tracking-tight mb-1">
+        <h2 className="text-[19px] font-extrabold text-brand-text leading-snug tracking-tight mb-1">
           <span className="block">{titleEn}</span>
-          <span className="block text-[13px] font-semibold text-[#557a5a] mt-0.5">{titleAm}</span>
+          <span className="block text-[13px] font-semibold text-faint mt-0.5">{titleAm}</span>
         </h2>
 
         <div className="mt-5">{children}</div>

@@ -11,9 +11,9 @@ export function auditTone(score: number): AuditTone {
 }
 
 const TONE_STYLES: Record<AuditTone, { text: string; chip: string }> = {
-  high: { text: "text-emerald-700", chip: "bg-emerald-50 text-emerald-800 ring-emerald-200" },
-  medium: { text: "text-amber-700", chip: "bg-amber-50 text-amber-800 ring-amber-200" },
-  low: { text: "text-red-700", chip: "bg-red-50 text-red-800 ring-red-200" },
+  high: { text: "text-success", chip: "bg-success-soft text-success ring-success-line" },
+  medium: { text: "text-warning", chip: "bg-warning-soft text-warning ring-warning-line" },
+  low: { text: "text-danger", chip: "bg-danger-soft text-danger ring-danger-line" },
 };
 
 const COPY: Record<string, { en: string; am: string }> = {
@@ -22,6 +22,11 @@ const COPY: Record<string, { en: string; am: string }> = {
   recommendations: { en: "Recommended next checks", am: "የሚመከሩ ተጨማሪ ምርመራዎች" },
   sourceGemini: { en: "AI audit · Gemini", am: "AI ኦዲት · Gemini" },
   sourceFallback: { en: "Offline demo audit (Gemini unavailable)", am: "ከመስመር ውጭ የማሳያ ኦዲት (Gemini አይገኝም)" },
+  reasonunconfigured: { en: "Reason: no GEMINI_API_KEY configured on the API server", am: "ምክንያት፦ በAPI ሰርቨሩ ላይ GEMINI_API_KEY አልተዋቀረም" },
+  reasonquota: { en: "Reason: provider rate limit or quota reached — try again shortly", am: "ምክንያት፦ የአገልግሎት ጊዜ ወሰን (quota) ሞልቷል — እባክዎ በቅርቡ እንደገና ይሞክሩ" },
+  reasonupstream: { en: "Reason: provider rejected the request — check GEMINI_MODEL / key validity", am: "ምክንያት፦ አቅራቢው ጥያቄውን አልተቀበለም — GEMINI_MODEL እና ቁልፉን ያረጋግጡ" },
+  reasonnetwork: { en: "Reason: network request to the provider failed — check connectivity", am: "ምክንያት፦ ወደ አቅራቢው ያለው የአውታረ መረብ ጥያቄ አልተሳካም — ግንኙነቱን ያረጋግጡ" },
+  reasonresponse_contract: { en: "Reason: provider response did not match the expected structure", am: "ምክንያት፦ የአቅራቢው መልስ በተጠበቀው አቀማመጥ አልመጣም" },
   disclaimer: {
     en: "Synthetic demonstration only. Verify every point against source documents.",
     am: "ሰው ሰራሽ ማሳያ ብቻ። እያንዳንዱን ነጥብ ከመነሻ ሰነዶች ጋር ያረጋግጡ።",
@@ -60,26 +65,29 @@ export function AuditResultView({ result, language }: AuditResultViewProps) {
   );
 
   return (
-    <div className="mt-6 border border-[#d2d8d0] rounded-lg bg-white p-5" aria-label={text("score")}>
+    <div className="mt-6 border border-line-soft dark:border-line-strong rounded-lg bg-white dark:bg-page p-5" aria-label={text("score")}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className={`inline-flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold ring-1 ${tone.text} ${tone.chip}`}>
           {result.transparencyScore}
         </span>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#6d527f]">{text("score")}</p>
-          <p className={`text-[10px] font-bold uppercase tracking-[0.08em] mt-1 ${result.source === "gemini" ? "text-[#386553]" : "text-[#835f27]"}`}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-purple">{text("score")}</p>
+          <p className={`text-[10px] font-bold uppercase tracking-[0.08em] mt-1 ${result.source === "gemini" ? "text-success" : "text-gold-text"}`}>
             {result.source === "gemini" ? text("sourceGemini") : text("sourceFallback")}
           </p>
+          {result.source === "fallback" && result.fallbackReason && COPY[`reason${result.fallbackReason}`] && (
+            <p className="text-[10px] mt-0.5 text-gold-text">{text(`reason${result.fallbackReason}`)}</p>
+          )}
         </div>
       </div>
 
-      <h4 className="mt-5 mb-2 text-[12px] font-bold text-[#173f35]">{text("bottlenecks")}</h4>
+      <h4 className="mt-5 mb-2 text-[12px] font-bold text-brand-text">{text("bottlenecks")}</h4>
       {renderItems(result.identifiedBottlenecksEn, result.identifiedBottlenecksAm)}
 
-      <h4 className="mt-5 mb-2 text-[12px] font-bold text-[#173f35]">{text("recommendations")}</h4>
+      <h4 className="mt-5 mb-2 text-[12px] font-bold text-brand-text">{text("recommendations")}</h4>
       {renderItems(result.recommendationsEn, result.recommendationsAm)}
 
-      <p className="mt-5 border-t border-[#e0e3dd] pt-3 text-[10px] italic text-[#5e6d68]">{text("disclaimer")}</p>
+      <p className="mt-5 border-t border-line-soft dark:border-line-strong pt-3 text-[10px] italic text-soft dark:text-soft">{text("disclaimer")}</p>
     </div>
   );
 }

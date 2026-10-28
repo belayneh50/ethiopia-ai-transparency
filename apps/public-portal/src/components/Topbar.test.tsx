@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AuthContext } from "../auth/AuthContext";
 import { FaydaContext } from "../FaydaContext";
+import { ThemeProvider } from "../theme";
 import { Topbar } from "./Topbar";
 import type { AuthContextValue } from "../auth/AuthContext";
 import type { FaydaContextValue } from "../FaydaContext";
@@ -35,18 +36,20 @@ function faydaValue(verification: typeof verified | null): FaydaContextValue {
 
 function render(verification: typeof verified | null) {
   return renderToStaticMarkup(
-    <AuthContext.Provider value={authValue}>
-      <FaydaContext.Provider value={faydaValue(verification)}>
-        <Topbar
-          language="en"
-          onLanguageChange={() => undefined}
-          onOpenExportModal={() => undefined}
-          onOpenSettingsModal={() => undefined}
-          onOpenFaydaModal={() => undefined}
-          onOpenVendorModal={() => undefined}
-        />
-      </FaydaContext.Provider>
-    </AuthContext.Provider>,
+    <ThemeProvider>
+      <AuthContext.Provider value={authValue}>
+        <FaydaContext.Provider value={faydaValue(verification)}>
+          <Topbar
+            language="en"
+            onLanguageChange={() => undefined}
+            onOpenExportModal={() => undefined}
+            onOpenSettingsModal={() => undefined}
+            onOpenFaydaModal={() => undefined}
+            onOpenVendorModal={() => undefined}
+          />
+        </FaydaContext.Provider>
+      </AuthContext.Provider>
+    </ThemeProvider>,
   );
 }
 

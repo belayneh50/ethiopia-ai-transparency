@@ -135,41 +135,41 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white dark:bg-page p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-bold text-[#173f35]">
+            <h2 className="text-[18px] font-bold text-brand-text">
               {showEn && COPY.title.en}
-              {showEn && showAm && <span className="text-[#6d527f]"> · </span>}
+              {showEn && showAm && <span className="text-purple"> · </span>}
               {showAm && COPY.title.am}
             </h2>
-            <p className="mt-1 text-[11px] text-[#5e6d68]">
+            <p className="mt-1 text-[11px] text-soft dark:text-soft">
               {showEn && COPY.subtitle.en}
               {showEn && showAm && <br />}
               {showAm && COPY.subtitle.am}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label={text("close")} className="rounded-md border border-[#d2d8d0] px-2 py-1 text-[13px] text-[#5e6d68]">
+          <button type="button" onClick={onClose} aria-label={text("close")} className="rounded-md border border-line-soft dark:border-line-strong bg-surface px-2 py-1 text-[13px] text-soft">
             ✕
           </button>
         </div>
 
         {verificationError && <p role="alert">Use the supplied demo identifier. · የተሰጠውን የማሳያ መለያ ይጠቀሙ።</p>}
         {/* Step 1 — Fayda verification of the representative */}
-        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6d527f]">{text("stepIdentity")}</p>
+        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-purple">{text("stepIdentity")}</p>
         {identity ? (
-          <div role="status" className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-[13px] font-bold text-emerald-800">
+          <div role="status" className="mt-2 rounded-lg border border-success-line bg-success-soft px-4 py-3">
+            <p className="text-[13px] font-bold text-success">
               ✓ {text("verifiedAs")}: {identity.fullName}
             </p>
-            <p className="mt-1 text-[12px] text-emerald-900">
+            <p className="mt-1 text-[12px] text-success">
               {identity.address} · FIN {maskFin(identity.subjectId)}
             </p>
-            <p className="mt-1 text-[11px] italic text-emerald-800">{text("identityLocked")}</p>
+            <p className="mt-1 text-[11px] italic text-success">{text("identityLocked")}</p>
           </div>
         ) : (
           <>
-            <label className="mt-2 block text-[10px] font-bold uppercase tracking-[0.08em] text-[#5e6d68]">
+            <label className="mt-2 block text-[10px] font-bold uppercase tracking-[0.08em] text-soft dark:text-soft">
               {text("fin")}
               <input
                 type="text"
@@ -179,26 +179,26 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
                 value={fin}
                 onChange={(event) => setFin(event.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder={COPY.placeholder.en}
-                className="mt-1 w-full rounded-md border border-[#c9d3cd] bg-white px-3 py-2 text-[14px] font-normal normal-case tracking-normal text-[#173f35]"
+                className="mt-1 w-full rounded-md border border-line-strong bg-white dark:bg-page px-3 py-2 text-[14px] font-normal normal-case tracking-normal text-brand-text"
               />
             </label>
             <button
               type="button"
               onClick={handleVerify}
               disabled={verifying || fin.length === 0}
-              className="mt-3 w-full rounded-md bg-[#173f35] px-4 py-2 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 w-full rounded-md bg-brand px-4 py-2 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {verifying ? text("verifying") : text("verify")}
             </button>
-            <p className="mt-2 text-[10px] text-[#5e6d68]">
+            <p className="mt-2 text-[10px] text-soft dark:text-soft">
               {text("tryThis")} <span className="font-mono">123456789012</span>
             </p>
           </>
         )}
 
         {/* Step 2 — company registration (locked until verified) */}
-        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6d527f]">{text("stepCompany")}</p>
-        <label className="mt-2 block text-[10px] font-bold uppercase tracking-[0.08em] text-[#5e6d68]">
+        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-purple">{text("stepCompany")}</p>
+        <label className="mt-2 block text-[10px] font-bold uppercase tracking-[0.08em] text-soft dark:text-soft">
           {text("company")}
           <input
             type="text"
@@ -207,42 +207,42 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
             onChange={(event) => setCompany(event.target.value)}
             placeholder={COPY.companyPlaceholder.en}
             disabled={!identity}
-            className="mt-1 w-full rounded-md border border-[#c9d3cd] bg-white px-3 py-2 text-[14px] font-normal normal-case tracking-normal text-[#173f35] disabled:cursor-not-allowed disabled:bg-[#f2f3f0]"
+            className="mt-1 w-full rounded-md border border-line-strong bg-white dark:bg-page px-3 py-2 text-[14px] font-normal normal-case tracking-normal text-brand-text disabled:cursor-not-allowed disabled:bg-surface-alt"
           />
         </label>
         {identity && (
-          <p className="mt-2 text-[11px] text-[#5e6d68]">
-            {text("representative")}: <b className="text-[#173f35]">{identity.fullName}</b> ({maskFin(identity.subjectId)})
+          <p className="mt-2 text-[11px] text-soft dark:text-soft">
+            {text("representative")}: <b className="text-brand-text">{identity.fullName}</b> ({maskFin(identity.subjectId)})
           </p>
         )}
         <button
           type="button"
           onClick={handleRegister}
           disabled={!identity || company.trim().length === 0}
-          className="mt-3 w-full rounded-md bg-[#173f35] px-4 py-2 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-3 w-full rounded-md bg-brand px-4 py-2 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {text("register")}
         </button>
 
         {/* Registered outcome + demo bid */}
         {registered && (
-          <div role="status" className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-[13px] font-bold text-emerald-800">
+          <div role="status" className="mt-4 rounded-lg border border-success-line bg-success-soft px-4 py-3">
+            <p className="text-[13px] font-bold text-success">
               ✓ {text("registered")}: {registered.company}
             </p>
-            <p className="mt-1 text-[12px] text-emerald-900">
+            <p className="mt-1 text-[12px] text-success">
               {registered.contactName} · FIN {maskFin(registered.contactSubjectId)} · {fmtDate(registered.registeredAt)}
             </p>
-            <p className="mt-1 text-[11px] italic text-emerald-800">{text("registeredHint")}</p>
+            <p className="mt-1 text-[11px] italic text-success">{text("registeredHint")}</p>
             {registered.bidSubmittedAt ? (
-              <p className="mt-2 rounded-md border border-emerald-300 bg-white px-3 py-2 text-[12px] font-bold text-emerald-800">
+              <p className="mt-2 rounded-md border border-success-line bg-white dark:bg-page px-3 py-2 text-[12px] font-bold text-success">
                 ✓ {text("bidSubmitted")} ({fmtDate(registered.bidSubmittedAt)})
               </p>
             ) : (
               <button
                 type="button"
                 onClick={handleSubmitBid}
-                className="mt-3 rounded-md bg-[#2f6f4f] px-4 py-2 text-[12px] font-bold text-white hover:opacity-90"
+                className="mt-3 rounded-md bg-brand px-4 py-2 text-[12px] font-bold text-white hover:opacity-90"
               >
                 {text("submitBid")}
               </button>
@@ -251,13 +251,13 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
         )}
 
         {/* Existing registrations */}
-        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#5e6d68]">{text("existing")}</p>
+        <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.08em] text-soft dark:text-soft">{text("existing")}</p>
         {vendors.length === 0 ? (
-          <p className="mt-1 text-[12px] text-[#5e6d68]">{text("none")}</p>
+          <p className="mt-1 text-[12px] text-soft dark:text-soft">{text("none")}</p>
         ) : (
-          <ul className="mt-1 space-y-1 text-[12px] text-[#173f35]">
+          <ul className="mt-1 space-y-1 text-[12px] text-brand-text">
             {vendors.map((v) => (
-              <li key={v.id} className="rounded-md border border-[#e0e3dd] px-3 py-2">
+              <li key={v.id} className="rounded-md border border-line-soft dark:border-line-strong px-3 py-2">
                 <b>{v.company}</b> — {v.contactName} (sign-off {maskFin(v.contactSubjectId)}){" "}
                 {v.bidSubmittedAt ? `· ${text("bidSubmitted")}` : ""}
               </li>
@@ -265,7 +265,7 @@ export function VendorRegistrationModal({ language, onClose }: VendorRegistratio
           </ul>
         )}
 
-        <p className="mt-4 border-t border-[#e0e3dd] pt-3 text-[10px] italic text-[#5e6d68]">{text("honest")}</p>
+        <p className="mt-4 border-t border-line-soft dark:border-line-strong pt-3 text-[10px] italic text-soft dark:text-soft">{text("honest")}</p>
       </div>
     </div>
   );
